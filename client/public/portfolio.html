@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Portafolio Cliente - AURUM</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="container mt-4">
+  <h1>Bienvenido, <span id="clientEmail"></span></h1>
+  <p>Aquí se muestra tu portafolio de activos.</p>
+  <canvas id="portfolioChart" width="400" height="200"></canvas>
+</div>
+<script>
+  // Mostrar correo del cliente (simulado)
+  document.getElementById('clientEmail').innerText = localStorage.getItem('clientEmail');
+
+  // Ejemplo de gráfico con Chart.js
+  const ctx = document.getElementById('portfolioChart').getContext('2d');
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['BTC', 'ORO', 'FIAT'],
+      datasets: [{
+        label: 'Valor (€)',
+        data: [5000, 3000, 2000],
+        backgroundColor: ['rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)']
+      }]
+    },
+    options: {
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+</script>
+</body>
+</html>
