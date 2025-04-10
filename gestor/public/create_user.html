@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Crear usuario - Aurum Project (Gestor)</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div class="container">
+    <h1>Panel de Gestión</h1>
+    <h2>Crear Usuario</h2>
+    <form onsubmit="handleCreateUser(event)">
+      <label for="name">Nombre:</label>
+      <input type="text" id="name" required />
+
+      <label for="email">Email:</label>
+      <input type="email" id="email" required />
+
+      <button class="btn" type="submit">Crear</button>
+    </form>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

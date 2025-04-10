@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Editar usuario - Aurum Project (Gestor)</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div class="container">
+    <h1>Panel de Gestión</h1>
+    <h2>Editar Usuario</h2>
+    <form onsubmit="handleEditUser(event)">
+      <label for="userId">ID de Usuario:</label>
+      <input type="text" id="userId" required />
+
+      <label for="newName">Nuevo Nombre:</label>
+      <input type="text" id="newName" required />
+
+      <button class="btn" type="submit">Guardar Cambios</button>
+    </form>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

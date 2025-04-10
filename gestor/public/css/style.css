@@ -1,0 +1,55 @@
+
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Verdana', sans-serif;
+  }
+  
+  body {
+    /* Degradado vertical */
+    background: linear-gradient(180deg, #005bea 0%, #00c6fb 100%);
+    color: #333;
+  }
+  
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: #ffffffcc;
+    border-radius: 8px;
+    margin-top: 2rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+  
+  h1, h2 {
+    text-align: center;
+  }
+  
+  /* Formulario */
+  form {
+    margin: 1rem 0;
+  }
+  
+  input[type="text"],
+  input[type="email"] {
+    display: block;
+    width: 100%;
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .btn {
+    background-color: #005bea;
+    color: #fff;
+    border: none;
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  
+  .btn:hover {
+    background-color: #003c99;
+  }
+  

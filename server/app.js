@@ -1,22 +1,26 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const usuariosRoutes = require('./routes/usuarios');
-
+const path = require('path');
 const app = express();
-const port = 3000; // Puedes cambiarlo si lo deseas
 
-// Configuración de middlewares para parseo de JSON y formulario
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// Middleware para servir archivos estáticos desde /client/public
+app.use(express.static(path.join(__dirname, '../client/public')));
 
-// Endpoint raíz para probar el servidor
+// Ruta principal que carga el login
 app.get('/', (req, res) => {
-  res.json({ message: "Servidor AURUM funcionando con Node.js" });
+  res.sendFile(path.join(__dirname, '../client/public/login.html'));
 });
 
-// Rutas para usuarios (CRUD)
-app.use('/api/usuarios', usuariosRoutes);
+// Puedes añadir rutas adicionales si quieres (opcional)
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/public/dashboard.html'));
+});
 
-app.listen(port, () => {
-  console.log(`Servidor AURUM corriendo en http://localhost:${port}`);
+app.get('/portfolio', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/public/portfolio.html'));
+});
+
+// Puerto del servidor
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor AURUM escuchando en http://localhost:${PORT}`);
 });

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Aurum Project - Gestor Dashboard</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <nav>
+    <h1>Aurum Gestor Dashboard</h1>
+    <ul>
+      <li><a href="dashboard.html">Inicio</a></li>
+      <li><a href="portfolio.html">Portafolios</a></li>
+      <li><a href="logout.html">Cerrar Sesión</a></li>
+    </ul>
+  </nav>
+  <main>
+    <section class="crud-section">
+      <h2>Gestión de Clientes</h2>
+      <button id="btnAgregar">Agregar Nuevo Cliente</button>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="clienteTable">
+          <!-- Aquí se llenarán las filas mediante JavaScript -->
+        </tbody>
+      </table>
+    </section>
+  </main>
+  
+  <!-- Modal para crear/editar cliente -->
+  <div id="modalCliente" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="modalTitulo">Nuevo Cliente</h2>
+      <form id="clienteForm">
+        <input type="hidden" id="clienteId" name="clienteId">
+        <div class="input-group">
+          <label for="nombre">Nombre:</label>
+          <input type="text" id="nombre" name="nombre" required>
+        </div>
+        <div class="input-group">
+          <label for="email">Email:</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <button type="submit">Guardar</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="./js/script.js"></script>
+</body>
+</html>
