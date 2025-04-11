@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>Aurum Project - Portafolio</title>
-  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="/client/css/style.css">
 </head>
 <body>
   <nav>
     <h1>Portafolio de Activos</h1>
     <ul>
-      <li><a href="portfolio.html">Inicio</a></li>
-      <li><a href="dashboard.html">Gestor</a></li>
-      <li><a href="logout.html">Cerrar Sesión</a></li>
+      <li><a href="/portfolio">Inicio</a></li> <!-- Modificado para coherencia -->
+      <li><a href="/dashboard">Gestor</a></li>
+      <li><a href="/client/logout.html">Cerrar Sesión</a></li>
     </ul>
   </nav>
   <main>
@@ -28,41 +28,38 @@
             <th>Acciones</th>
           </tr>
         </thead>
-        <tbody id="activoTable">
-          <!-- Las filas se completan con JavaScript -->
-        </tbody>
+        <tbody id="activoTable"></tbody>
       </table>
     </section>
   </main>
   
-  <!-- Modal para agregar/editar activo -->
   <div id="modalActivo" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
       <h2 id="modalActivoTitulo">Nuevo Activo</h2>
       <form id="activoForm">
-        <input type="hidden" id="activoId" name="activoId">
+        <input type="hidden" id="activoId">
         <div class="input-group">
-          <label for="tipoActivo">Tipo de Activo:</label>
-          <select id="tipoActivo" name="tipoActivo" required>
+          <label>Tipo de Activo:</label>
+          <select id="tipoActivo" required>
             <option value="bitcoin">Bitcoin</option>
             <option value="oro">Oro</option>
             <option value="fiat">Fiat</option>
           </select>
         </div>
         <div class="input-group">
-          <label for="cantidad">Cantidad:</label>
-          <input type="number" step="any" id="cantidad" name="cantidad" required>
+          <label>Cantidad:</label>
+          <input type="number" step="any" id="cantidad" required>
         </div>
         <div class="input-group">
-          <label for="precio">Precio:</label>
-          <input type="number" step="any" id="precio" name="precio" required>
+          <label>Precio:</label>
+          <input type="number" step="any" id="precio" required>
         </div>
         <button type="submit">Guardar</button>
       </form>
     </div>
   </div>
 
-  <script src="./js/script.js"></script>
+  <script src="/client/js/script.js"></script>
 </body>
 </html>

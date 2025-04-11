@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <title>Aurum Project - Gestor Dashboard</title>
-  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="/gestor/css/style.css">
 </head>
 <body>
   <nav>
     <h1>Aurum Gestor Dashboard</h1>
     <ul>
-      <li><a href="dashboard.html">Inicio</a></li>
-      <li><a href="portfolio.html">Portafolios</a></li>
-      <li><a href="logout.html">Cerrar Sesión</a></li>
+      <li><a href="/dashboard">Inicio</a></li>
+      <li><a href="/portfolio">Portafolios</a></li>
+      <li><a href="/gestor/logout.html">Cerrar Sesión</a></li>
     </ul>
   </nav>
+
   <main>
     <section class="crud-section">
       <h2>Gestión de Clientes</h2>
@@ -27,33 +28,31 @@
             <th>Acciones</th>
           </tr>
         </thead>
-        <tbody id="clienteTable">
-          <!-- Aquí se llenarán las filas mediante JavaScript -->
-        </tbody>
+        <tbody id="clienteTable"></tbody>
       </table>
     </section>
   </main>
-  
-  <!-- Modal para crear/editar cliente -->
+
+  <!-- Modal para agregar/editar -->
   <div id="modalCliente" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
-      <h2 id="modalTitulo">Nuevo Cliente</h2>
+      <h2>Cliente</h2>
       <form id="clienteForm">
-        <input type="hidden" id="clienteId" name="clienteId">
+        <input type="hidden" id="clienteId">
         <div class="input-group">
           <label for="nombre">Nombre:</label>
-          <input type="text" id="nombre" name="nombre" required>
+          <input type="text" id="nombre" required>
         </div>
         <div class="input-group">
           <label for="email">Email:</label>
-          <input type="email" id="email" name="email" required>
+          <input type="email" id="email" required>
         </div>
         <button type="submit">Guardar</button>
       </form>
     </div>
   </div>
 
-  <script src="./js/script.js"></script>
+  <script src="/gestor/js/script.js"></script>
 </body>
 </html>

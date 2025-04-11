@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <title>Crear usuario - Aurum Project (Gestor)</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <!-- Utiliza rutas absolutas para servir los archivos desde la carpeta /gestor -->
+  <link rel="stylesheet" href="/gestor/css/style.css" />
 </head>
 <body>
-
   <div class="container">
     <h1>Panel de Gestión</h1>
     <h2>Crear Usuario</h2>
-    <form onsubmit="handleCreateUser(event)">
+    <form id="createUserForm">
       <label for="name">Nombre:</label>
       <input type="text" id="name" required />
 
@@ -21,6 +21,48 @@
     </form>
   </div>
 
-  <script src="js/script.js"></script>
+  <!-- Se puede colocar el script aquí o referenciar un archivo externo -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Agrega el evento submit al formulario para crear usuario
+      document.getElementById('createUserForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        // Obtiene los datos de los inputs
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        
+        // Parámetros para la creación: en este caso, se asigna la contraseña "1234" y rol "cliente"
+        try {
+          const response = await fetch('http://localhost:3000/api/usuarios', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              nombre: name,
+              email: email,
+              password: '1234',   // Contraseña predeterminada (ajusta según lo necesites)
+              rol: 'cliente'      // Rol asignado (puedes cambiarlo a "admin", "gestor", etc.)
+            })
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al crear el usuario.');
+          }
+          
+          const data = await response.json();
+          alert(`Usuario creado exitosamente:\nID: ${data.id}\nNombre: ${data.nombre}`);
+          
+          // Redirige a la página de listado de usuarios del Gestor (ajusta la ruta según convenga)
+          window.location.href = '/gestor/index.html';
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Error al crear usuario: ' + error.message);
+        }
+      });
+    });
+  </script>
 </body>
 </html>

@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <title>Main - Aurum Project (Cliente)</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <!-- Usamos rutas absolutas para asegurarnos que se cargue desde la carpeta /client -->
+  <link rel="stylesheet" href="/client/css/style.css" />
 </head>
 <body>
-
   <header>
     <h1>Aurum Client</h1>
     <nav class="navbar">
-      <a href="main.html">Inicio</a>
-      <a href="portfolio.html">Portfolio</a>
-      <a href="login.html">Login</a>
+      <!-- Enlaces absolutos para los archivos del cliente -->
+      <a href="/client/main.html">Inicio</a>
+      <a href="/client/portfolio.html">Portfolio</a>
+      <a href="/client/login.html">Login</a>
     </nav>
   </header>
 
@@ -25,6 +26,7 @@
     <p>&copy; 2025 Aurum Project - Client</p>
   </footer>
 
-  <script src="js/script.js"></script>
+  <!-- Cargamos el script usando ruta absoluta -->
+  <script src="/client/js/script.js"></script>
 </body>
 </html>

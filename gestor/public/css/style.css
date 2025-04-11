@@ -1,55 +1,131 @@
+/* Reset y estilos generales */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-html, body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Verdana', sans-serif;
-  }
-  
-  body {
-    /* Degradado vertical */
-    background: linear-gradient(180deg, #005bea 0%, #00c6fb 100%);
-    color: #333;
-  }
-  
-  .container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 2rem;
-    background-color: #ffffffcc;
-    border-radius: 8px;
-    margin-top: 2rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  }
-  
-  h1, h2 {
-    text-align: center;
-  }
-  
-  /* Formulario */
-  form {
-    margin: 1rem 0;
-  }
-  
-  input[type="text"],
-  input[type="email"] {
-    display: block;
-    width: 100%;
-    padding: 0.8rem;
-    margin-bottom: 0.8rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-  
-  .btn {
-    background-color: #005bea;
-    color: #fff;
-    border: none;
-    padding: 0.8rem 1.2rem;
-    cursor: pointer;
-    border-radius: 4px;
-  }
-  
-  .btn:hover {
-    background-color: #003c99;
-  }
-  
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  color: #f0f0f0;
+  line-height: 1.6;
+}
+
+/* Barra de navegación */
+nav {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+nav h1 {
+  font-size: 1.8rem;
+}
+nav ul {
+  list-style: none;
+  display: flex;
+  gap: 1rem;
+}
+nav a {
+  color: #f0f0f0;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+nav a:hover {
+  color: #ffc107;
+}
+
+/* Contenedores principales */
+.login-container,
+.crud-section,
+.portfolio-section {
+  background: rgba(255, 255, 255, 0.1);
+  margin: 2rem auto;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 800px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Estilos de formularios */
+.input-group {
+  margin-bottom: 1rem;
+}
+.input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+.input-group input,
+.input-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 4px;
+}
+
+/* Botones */
+button {
+  background: linear-gradient(45deg, #ffc107, #ff9800);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  color: #333;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+button:hover {
+  background: linear-gradient(45deg, #ff9800, #ffc107);
+}
+
+/* Tablas */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+table th,
+table td {
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: left;
+}
+table th {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Estilos para Modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 100;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.7);
+  justify-content: center;
+  align-items: center;
+}
+.modal-content {
+  background: #333;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+}
+.modal-content h2 {
+  margin-bottom: 1rem;
+}
+.modal .close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+}

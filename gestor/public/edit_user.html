@@ -3,13 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <title>Editar usuario - Aurum Project (Gestor)</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <!-- Usamos rutas absolutas para cargar el CSS desde /gestor/css/style.css -->
+  <link rel="stylesheet" href="/gestor/css/style.css" />
 </head>
 <body>
 
   <div class="container">
     <h1>Panel de Gestión</h1>
     <h2>Editar Usuario</h2>
+    <!-- El formulario llama a la función handleEditUser definida en el script -->
     <form onsubmit="handleEditUser(event)">
       <label for="userId">ID de Usuario:</label>
       <input type="text" id="userId" required />
@@ -21,6 +23,7 @@
     </form>
   </div>
 
-  <script src="js/script.js"></script>
+  <!-- Se carga el JavaScript usando ruta absoluta para asegurar la carga desde /gestor/js/script.js -->
+  <script src="/gestor/js/script.js"></script>
 </body>
 </html>
