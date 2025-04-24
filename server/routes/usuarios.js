@@ -1,82 +1,71 @@
+// server/routes/usuarios.js
 const express = require('express');
-const router = express.Router();
-const pool = require('../config/db'); // Importa la conexión a la BD
+const router  = express.Router();
+const pool    = require('../config/db');
 
-// GET: Listar todos los usuarios
+// 1) Listar todos los clientes (rol = 'cliente')
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM usuarios');
+    const [rows] = await pool.query(
+      `SELECT id, nombre, email, estado 
+       FROM usuarios 
+       WHERE rol = 'cliente'`
+    );
     res.json(rows);
   } catch (err) {
-    console.error("Error al obtener usuarios:", err);
-    res.status(500).json({ error: 'Error al obtener usuarios' });
+    console.error("Error al obtener clientes:", err);
+    res.status(500).json({ error: 'Error al obtener clientes' });
   }
 });
 
-// POST: Crear usuario
+// 2) Crear nuevo cliente
 router.post('/', async (req, res) => {
-  const { nombre, email, password, rol } = req.body;
+  const { nombre, email } = req.body;
   try {
     const [result] = await pool.query(
-      'INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, MD5(?), ?)',
-      [nombre, email, password, rol]
+      `INSERT INTO usuarios 
+         (nombre, email, password, rol, estado, dosfa, nivel_seguridad) 
+       VALUES (?, ?, MD5(?), 'cliente', 1, 'N', 0)`,
+      [nombre, email, '1234']
     );
-    res.json({
-      id: result.insertId,
-      nombre,
-      email,
-      rol
-    });
+    res.status(201).json({ id: result.insertId, nombre, email, estado: 1 });
   } catch (err) {
-    console.error("Error al crear usuario:", err);
-    res.status(500).json({ error: 'Error al crear usuario' });
+    console.error("Error al crear cliente:", err);
+    res.status(500).json({ error: 'Error al crear cliente' });
   }
 });
 
-// PUT: Editar usuario
+// 3) Editar cliente
 router.put('/:id', async (req, res) => {
-  const userId = req.params.id;
-  const { nombre, email, rol, estado } = req.body;
+  const { id } = req.params;
+  const { nombre, email, estado } = req.body;
   try {
     await pool.query(
-      'UPDATE usuarios SET nombre = ?, email = ?, rol = ?, estado = ? WHERE id = ?',
-      [nombre, email, rol, estado, userId]
+      `UPDATE usuarios 
+         SET nombre = ?, email = ?, estado = ? 
+       WHERE id = ? AND rol = 'cliente'`,
+      [nombre, email, estado, id]
     );
-    res.json({ success: true, message: `Usuario ${userId} editado con éxito` });
+    res.json({ success: true });
   } catch (err) {
-    console.error("Error al editar usuario:", err);
-    res.status(500).json({ error: 'Error al editar usuario' });
+    console.error("Error al editar cliente:", err);
+    res.status(500).json({ error: 'Error al editar cliente' });
   }
 });
 
-// DELETE: Eliminar usuario
+// 4) Eliminar cliente
 router.delete('/:id', async (req, res) => {
-  const userId = req.params.id;
+  const { id } = req.params;
   try {
-    await pool.query('DELETE FROM usuarios WHERE id = ?', [userId]);
-    res.json({ success: true, message: `Usuario ${userId} eliminado con éxito` });
-  } catch (err) {
-    console.error("Error al eliminar usuario:", err);
-    res.status(500).json({ error: 'Error al eliminar usuario' });
-  }
-});
-
-// POST: Login de usuario
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    // NOTA: MD5 se usa solo para demostración; en producción utiliza bcrypt u otro hash seguro.
-    const [rows] = await pool.query(
-      'SELECT * FROM usuarios WHERE email = ? AND password = MD5(?)',
-      [email, password]
+    await pool.query(
+      `DELETE FROM usuarios 
+       WHERE id = ? AND rol = 'cliente'`,
+      [id]
     );
-    if (rows.length === 0) {
-      return res.status(401).json({ error: 'Credenciales incorrectas' });
-    }
-    res.json({ user: rows[0] });
+    res.json({ success: true });
   } catch (err) {
-    console.error("Error en login:", err);
-    res.status(500).json({ error: 'Error interno' });
+    console.error("Error al eliminar cliente:", err);
+    res.status(500).json({ error: 'Error al eliminar cliente' });
   }
 });
 

@@ -1,186 +1,177 @@
-document.addEventListener('DOMContentLoaded', function() {
+// gestor/public/js/script.js   (idéntico si lo pones en client/public/js/script.js)
+document.addEventListener('DOMContentLoaded', () => {
   console.log('Script unificado cargado');
 
-  // -------------------------------
-  // Funcionalidad para LOGIN (Cliente)
-  // -------------------------------
+  // Carga inicial de arrays desde localStorage
+  let clientes = JSON.parse(localStorage.getItem('aurum_clientes') || '[]');
+  let activos  = JSON.parse(localStorage.getItem('aurum_activos')  || '[]');
+
+  // ——— LOGIN ——————————————————————————————
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
-    loginForm.addEventListener('submit', function(e) {
+    loginForm.addEventListener('submit', e => {
       e.preventDefault();
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      if (username === 'admin' && password === '1234') {
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value;
+      if (u === 'admin' && p === '1234') {
         alert('Login correcto');
-        window.location.href = '/dashboard'; // Redirección según la configuración del servidor
+        window.location.href = '/dashboard';
       } else {
         alert('Usuario o contraseña incorrectos');
       }
     });
   }
 
-  // -------------------------------
-  // Funcionalidad para el módulo Gestor (Clientes)
-  // -------------------------------
+  // ——— GESTOR: CRUD CLIENTES —————————————————
   const btnAgregarCliente = document.getElementById('btnAgregar');
-  const modalCliente = document.getElementById('modalCliente');
-  const clienteForm = document.getElementById('clienteForm');
-  const clienteTable = document.getElementById('clienteTable');
+  const modalCliente      = document.getElementById('modalCliente');
+  const clienteForm       = document.getElementById('clienteForm');
+  const clienteTable      = document.getElementById('clienteTable');
 
-  if (btnAgregarCliente && modalCliente) {
-    btnAgregarCliente.addEventListener('click', () => {
-      openModal(modalCliente);
-    });
+  if (btnAgregarCliente) {
+    btnAgregarCliente.addEventListener('click', () => openModal(modalCliente));
   }
 
   if (clienteForm) {
-    clienteForm.addEventListener('submit', function(event) {
-      event.preventDefault();
+    clienteForm.addEventListener('submit', ev => {
+      ev.preventDefault();
+      const idField = document.getElementById('clienteId').value;
+      const nombre  = document.getElementById('nombre').value.trim();
+      const email   = document.getElementById('email').value.trim();
 
-      const id = document.getElementById('clienteId') ? document.getElementById('clienteId').value : "";
-      const nombre = document.getElementById('nombre').value;
-      const email = document.getElementById('email').value;
-
-      if (id) {
-        const index = clientes.findIndex(c => c.id == id);
-        if (index > -1) {
-          clientes[index] = { id, nombre, email };
-        }
+      if (idField) {
+        // editar
+        const idx = clientes.findIndex(c => c.id == idField);
+        if (idx > -1) clientes[idx] = { id: +idField, nombre, email };
       } else {
-        const newId = clientes.length + 1;
+        // nuevo
+        const newId = clientes.length ? clientes[clientes.length - 1].id + 1 : 1;
         clientes.push({ id: newId, nombre, email });
       }
+
+      localStorage.setItem('aurum_clientes', JSON.stringify(clientes));
       refreshClienteTable();
       clienteForm.reset();
       closeModal(modalCliente);
     });
   }
 
-  // Array y funciones para el CRUD simulado de clientes
-  let clientes = [];
+  window.editCliente = id => {
+    const c = clientes.find(x => x.id == id);
+    if (!c) return;
+    document.getElementById('clienteId').value = c.id;
+    document.getElementById('nombre').value    = c.nombre;
+    document.getElementById('email').value     = c.email;
+    openModal(modalCliente);
+  };
+
+  window.deleteCliente = id => {
+    if (!confirm(`¿Eliminar cliente #${id}?`)) return;
+    clientes = clientes.filter(c => c.id != id);
+    localStorage.setItem('aurum_clientes', JSON.stringify(clientes));
+    refreshClienteTable();
+  };
+
   function refreshClienteTable() {
     if (!clienteTable) return;
     clienteTable.innerHTML = '';
-    clientes.forEach(cliente => {
+    clientes.forEach(c => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${cliente.id}</td>
-        <td>${cliente.nombre}</td>
-        <td>${cliente.email}</td>
+        <td>${c.id}</td>
+        <td>${c.nombre}</td>
+        <td>${c.email}</td>
         <td>
-          <button onclick="editCliente(${cliente.id})">Editar</button>
-          <button onclick="deleteCliente(${cliente.id})">Eliminar</button>
+          <button onclick="editCliente(${c.id})">Editar</button>
+          <button onclick="deleteCliente(${c.id})">Eliminar</button>
         </td>
       `;
       clienteTable.appendChild(tr);
     });
   }
-  window.editCliente = function(id) {
-    const cliente = clientes.find(c => c.id == id);
-    if (cliente) {
-      document.getElementById('clienteId').value = cliente.id;
-      document.getElementById('nombre').value = cliente.nombre;
-      document.getElementById('email').value = cliente.email;
-      openModal(modalCliente);
-    }
-  };
-  window.deleteCliente = function(id) {
-    clientes = clientes.filter(c => c.id != id);
-    refreshClienteTable();
-  };
+  refreshClienteTable();
 
-  // -------------------------------
-  // Funcionalidad para el módulo Cliente (Activos/Portafolio)
-  // -------------------------------
+  // ——— CLIENTE: CRUD ACTIVOS —————————————————
   const btnAgregarActivo = document.getElementById('btnAgregarActivo');
-  const modalActivo = document.getElementById('modalActivo');
-  const activoForm = document.getElementById('activoForm');
-  const activoTable = document.getElementById('activoTable');
+  const modalActivo      = document.getElementById('modalActivo');
+  const activoForm       = document.getElementById('activoForm');
+  const activoTable      = document.getElementById('activoTable');
 
-  if (btnAgregarActivo && modalActivo) {
-    btnAgregarActivo.addEventListener('click', function() {
-      openModal(modalActivo);
-    });
+  if (btnAgregarActivo) {
+    btnAgregarActivo.addEventListener('click', () => openModal(modalActivo));
   }
 
   if (activoForm) {
-    activoForm.addEventListener('submit', function(event) {
-      event.preventDefault();
-
-      const id = document.getElementById('activoId').value;
+    activoForm.addEventListener('submit', ev => {
+      ev.preventDefault();
+      const idField    = document.getElementById('activoId').value;
       const tipoActivo = document.getElementById('tipoActivo').value;
-      const cantidad = document.getElementById('cantidad').value;
-      const precio = document.getElementById('precio').value;
+      const cantidad   = document.getElementById('cantidad').value;
+      const precio     = document.getElementById('precio').value;
 
-      if (id) {
-        const index = activos.findIndex(a => a.id == id);
-        if (index > -1) {
-          activos[index] = { id, tipoActivo, cantidad, precio };
-        }
+      if (idField) {
+        const idx = activos.findIndex(a => a.id == idField);
+        if (idx > -1) activos[idx] = { id: +idField, tipoActivo, cantidad, precio };
       } else {
-        const newId = activos.length + 1;
+        const newId = activos.length ? activos[activos.length - 1].id + 1 : 1;
         activos.push({ id: newId, tipoActivo, cantidad, precio });
       }
+
+      localStorage.setItem('aurum_activos', JSON.stringify(activos));
       refreshActivoTable();
       activoForm.reset();
       closeModal(modalActivo);
     });
   }
 
-  let activos = [];
+  window.editActivo = id => {
+    const a = activos.find(x => x.id == id);
+    if (!a) return;
+    document.getElementById('activoId').value    = a.id;
+    document.getElementById('tipoActivo').value  = a.tipoActivo;
+    document.getElementById('cantidad').value    = a.cantidad;
+    document.getElementById('precio').value      = a.precio;
+    openModal(modalActivo);
+  };
+
+  window.deleteActivo = id => {
+    if (!confirm(`¿Eliminar activo #${id}?`)) return;
+    activos = activos.filter(a => a.id != id);
+    localStorage.setItem('aurum_activos', JSON.stringify(activos));
+    refreshActivoTable();
+  };
+
   function refreshActivoTable() {
     if (!activoTable) return;
     activoTable.innerHTML = '';
-    activos.forEach(activo => {
+    activos.forEach(a => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${activo.id}</td>
-        <td>${activo.tipoActivo}</td>
-        <td>${activo.cantidad}</td>
-        <td>${activo.precio}</td>
+        <td>${a.id}</td>
+        <td>${a.tipoActivo}</td>
+        <td>${a.cantidad}</td>
+        <td>${a.precio}</td>
         <td>
-          <button onclick="editActivo(${activo.id})">Editar</button>
-          <button onclick="deleteActivo(${activo.id})">Eliminar</button>
+          <button onclick="editActivo(${a.id})">Editar</button>
+          <button onclick="deleteActivo(${a.id})">Eliminar</button>
         </td>
       `;
       activoTable.appendChild(tr);
     });
   }
-  window.editActivo = function(id) {
-    const activo = activos.find(a => a.id == id);
-    if (activo) {
-      document.getElementById('activoId').value = activo.id;
-      document.getElementById('tipoActivo').value = activo.tipoActivo;
-      document.getElementById('cantidad').value = activo.cantidad;
-      document.getElementById('precio').value = activo.precio;
-      openModal(modalActivo);
-    }
-  };
-  window.deleteActivo = function(id) {
-    activos = activos.filter(a => a.id != id);
-    refreshActivoTable();
-  };
+  refreshActivoTable();
 
-  // -------------------------------
-  // Funciones para abrir y cerrar modales
-  function openModal(modal) {
-    modal.style.display = 'flex';
-  }
-  function closeModal(modal) {
-    modal.style.display = 'none';
-  }
+  // ——— MODALES ——————————————————————————————
+  function openModal(m)  { m.style.display = 'flex'; }
+  function closeModal(m) { m.style.display = 'none'; }
 
-  // Cerrar modal al hacer clic en la "X" o fuera del modal (común para ambos módulos)
-  const allCloseElements = document.querySelectorAll('.modal .close');
-  allCloseElements.forEach(el => {
-    el.addEventListener('click', () => {
-      const modal = el.closest('.modal');
-      if (modal) closeModal(modal);
-    });
-  });
-  window.addEventListener('click', (event) => {
-    if (event.target.classList.contains('modal')) {
-      closeModal(event.target);
-    }
+  document.querySelectorAll('.modal .close').forEach(el =>
+    el.addEventListener('click', () =>
+      closeModal(el.closest('.modal'))
+    )
+  );
+  window.addEventListener('click', e => {
+    if (e.target.classList.contains('modal'))
+      closeModal(e.target);
   });
 });
