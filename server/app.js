@@ -18,6 +18,15 @@ app.use('/api/usuarios', require('./routes/usuarios'));
 app.use('/client', express.static(path.join(__dirname,'../client/public')));
 app.use('/gestor', express.static(path.join(__dirname,'../gestor/public')));
 
+// Portafolios
+app.use('/api/portafolios', require('./routes/portafolios'));
+
+// Trasnsacciones
+app.use('/api/transacciones', require('./routes/transacciones'));
+
+// Activos
+app.use('/api/activos', require('./routes/activos'));
+
 // Páginas principales
 app.get('/',        (req,res) => res.sendFile(path.join(__dirname,'../client/public/login.html')));
 app.get('/dashboard',(req,res) => res.sendFile(path.join(__dirname,'../gestor/public/dashboard.html')));

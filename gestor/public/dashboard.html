@@ -6,6 +6,14 @@
   <link rel="stylesheet" href="/gestor/css/style.css">
 </head>
 <body>
+
+  <!-- Control de acceso: si no hay sesión iniciada, redirige al login -->
+  <script>
+    if (localStorage.getItem('sesionIniciada') !== 'true') {
+      window.location.href = '/';
+    }
+  </script>
+
   <nav>
     <h1>Aurum Gestor Dashboard</h1>
     <ul>
@@ -18,7 +26,8 @@
   <main>
     <section class="crud-section">
       <h2>Gestión de Clientes</h2>
-      <button id="btnAgregar" type="button">Agregar Nuevo Cliente</button>      <table>
+      <button id="btnAgregar" type="button">Agregar Nuevo Cliente</button>
+      <table>
         <thead>
           <tr>
             <th>ID</th>

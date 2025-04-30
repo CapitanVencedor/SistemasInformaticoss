@@ -6,14 +6,23 @@
   <link rel="stylesheet" href="/client/css/style.css">
 </head>
 <body>
+
+  <!-- Control de acceso: si no hay sesión iniciada, redirige al login -->
+  <script>
+    if (localStorage.getItem('sesionIniciada') !== 'true') {
+      window.location.href = '/';
+    }
+  </script>
+
   <nav>
     <h1>Portafolio de Activos</h1>
     <ul>
-      <li><a href="/portfolio">Inicio</a></li> <!-- Modificado para coherencia -->
+      <li><a href="/portfolio">Inicio</a></li>
       <li><a href="/dashboard">Gestor</a></li>
       <li><a href="/client/logout.html">Cerrar Sesión</a></li>
     </ul>
   </nav>
+
   <main>
     <section class="portfolio-section">
       <h2>Mis Activos</h2>
