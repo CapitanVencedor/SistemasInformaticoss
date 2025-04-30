@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Aurum Project - Login</title>
-  <!-- Usamos rutas absolutas para asegurar que se cargue desde la carpeta /client -->
   <link rel="stylesheet" href="/client/css/style.css">
 </head>
 <body>
@@ -22,7 +21,23 @@
     </form>
   </div>
 
-  <!-- Cargamos el script también con ruta absoluta -->
   <script src="/client/js/script.js"></script>
+
+  <script>
+    // Sobrescribimos el comportamiento del formulario para controlar la sesión
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      if (username === 'admin' && password === '1234') {
+        alert('Login correcto');
+        localStorage.setItem('sesionIniciada', 'true'); // Guardar sesión
+        window.location.href = '/dashboard';
+      } else {
+        alert('Usuario o contraseña incorrectos');
+      }
+    });
+  </script>
 </body>
 </html>

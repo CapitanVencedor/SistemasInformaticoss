@@ -2,10 +2,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Script unificado cargado');
 
-  // Carga inicial de arrays desde localStorage
-  let clientes = JSON.parse(localStorage.getItem('aurum_clientes') || '[]');
-  let activos  = JSON.parse(localStorage.getItem('aurum_activos')  || '[]');
-
   // ——— LOGIN ——————————————————————————————
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
@@ -15,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const p = document.getElementById('password').value;
       if (u === 'admin' && p === '1234') {
         alert('Login correcto');
+        localStorage.setItem('sesionIniciada', 'true');
         window.location.href = '/dashboard';
       } else {
         alert('Usuario o contraseña incorrectos');
@@ -22,35 +19,53 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ——— GESTOR: CRUD CLIENTES —————————————————
+  // ——— GESTOR: CRUD CLIENTES —————————————————————
   const btnAgregarCliente = document.getElementById('btnAgregar');
   const modalCliente      = document.getElementById('modalCliente');
   const clienteForm       = document.getElementById('clienteForm');
   const clienteTable      = document.getElementById('clienteTable');
+  let   clientes = []; // ya no cargamos desde localStorage
+
+  // Carga inicial de clientes desde la API
+  async function loadClientes() {
+    try {
+      const res = await fetch('/api/usuarios');
+      clientes    = await res.json();
+      refreshClienteTable();
+    } catch (err) {
+      console.error('Error cargando clientes:', err);
+    }
+  }
+  loadClientes();
 
   if (btnAgregarCliente) {
     btnAgregarCliente.addEventListener('click', () => openModal(modalCliente));
   }
 
   if (clienteForm) {
-    clienteForm.addEventListener('submit', ev => {
+    clienteForm.addEventListener('submit', async ev => {
       ev.preventDefault();
       const idField = document.getElementById('clienteId').value;
       const nombre  = document.getElementById('nombre').value.trim();
       const email   = document.getElementById('email').value.trim();
 
       if (idField) {
-        // editar
-        const idx = clientes.findIndex(c => c.id == idField);
-        if (idx > -1) clientes[idx] = { id: +idField, nombre, email };
+        // Editar cliente
+        await fetch(`/api/usuarios/${idField}`, {
+          method:  'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ nombre, email, estado: 1 })
+        });
       } else {
-        // nuevo
-        const newId = clientes.length ? clientes[clientes.length - 1].id + 1 : 1;
-        clientes.push({ id: newId, nombre, email });
+        // Crear nuevo cliente
+        await fetch('/api/usuarios', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ nombre, email })
+        });
       }
 
-      localStorage.setItem('aurum_clientes', JSON.stringify(clientes));
-      refreshClienteTable();
+      await loadClientes();       // Recarga desde el servidor
       clienteForm.reset();
       closeModal(modalCliente);
     });
@@ -65,11 +80,10 @@ document.addEventListener('DOMContentLoaded', () => {
     openModal(modalCliente);
   };
 
-  window.deleteCliente = id => {
+  window.deleteCliente = async id => {
     if (!confirm(`¿Eliminar cliente #${id}?`)) return;
-    clientes = clientes.filter(c => c.id != id);
-    localStorage.setItem('aurum_clientes', JSON.stringify(clientes));
-    refreshClienteTable();
+    await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
+    await loadClientes();
   };
 
   function refreshClienteTable() {
@@ -89,13 +103,13 @@ document.addEventListener('DOMContentLoaded', () => {
       clienteTable.appendChild(tr);
     });
   }
-  refreshClienteTable();
 
-  // ——— CLIENTE: CRUD ACTIVOS —————————————————
+  // ——— CLIENTE: CRUD ACTIVOS —————————————————————
   const btnAgregarActivo = document.getElementById('btnAgregarActivo');
   const modalActivo      = document.getElementById('modalActivo');
   const activoForm       = document.getElementById('activoForm');
   const activoTable      = document.getElementById('activoTable');
+  let   activos          = JSON.parse(localStorage.getItem('aurum_activos') || '[]');
 
   if (btnAgregarActivo) {
     btnAgregarActivo.addEventListener('click', () => openModal(modalActivo));
