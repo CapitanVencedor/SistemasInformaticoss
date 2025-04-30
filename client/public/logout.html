@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Sesión Cerrada</title>
+  <link rel="stylesheet" href="/gestor/css/style.css"> <!-- o /client/css/style.css si es desde el cliente -->
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+      background: #1e3c72;
+      color: white;
+      font-family: sans-serif;
+    }
+    a {
+      color: #ffc107;
+      font-weight: bold;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <h1>Sesión cerrada correctamente</h1>
+    <p><a href="/">Volver al inicio</a></p>
+  </div>
+
+  <script>
+    // Limpieza de posibles datos de sesión
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Redirección al login en 3 segundos
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 3000);
+  </script>
+</body>
+</html>

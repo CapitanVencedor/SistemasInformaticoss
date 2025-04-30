@@ -18,7 +18,27 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2) Crear nuevo cliente
+// 2) Obtener un cliente por ID
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, nombre, email, estado 
+       FROM usuarios 
+       WHERE rol = 'cliente' AND id = ?`,
+      [id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Cliente no encontrado' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(`Error al obtener cliente ${id}:`, err);
+    res.status(500).json({ error: 'Error al obtener cliente' });
+  }
+});
+
+// 3) Crear nuevo cliente
 router.post('/', async (req, res) => {
   const { nombre, email } = req.body;
   try {
@@ -28,24 +48,32 @@ router.post('/', async (req, res) => {
        VALUES (?, ?, MD5(?), 'cliente', 1, 'N', 0)`,
       [nombre, email, '1234']
     );
-    res.status(201).json({ id: result.insertId, nombre, email, estado: 1 });
+    res.status(201).json({ 
+      id: result.insertId, 
+      nombre, 
+      email, 
+      estado: 1 
+    });
   } catch (err) {
     console.error("Error al crear cliente:", err);
     res.status(500).json({ error: 'Error al crear cliente' });
   }
 });
 
-// 3) Editar cliente
+// 4) Editar cliente
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { nombre, email, estado } = req.body;
   try {
-    await pool.query(
+    const [result] = await pool.query(
       `UPDATE usuarios 
          SET nombre = ?, email = ?, estado = ? 
        WHERE id = ? AND rol = 'cliente'`,
       [nombre, email, estado, id]
     );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Cliente no encontrado o sin cambios' });
+    }
     res.json({ success: true });
   } catch (err) {
     console.error("Error al editar cliente:", err);
@@ -53,19 +81,45 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// 4) Eliminar cliente
+// 5) Eliminar cliente
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query(
+    const [result] = await pool.query(
       `DELETE FROM usuarios 
        WHERE id = ? AND rol = 'cliente'`,
       [id]
     );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Cliente no encontrado' });
+    }
     res.json({ success: true });
   } catch (err) {
     console.error("Error al eliminar cliente:", err);
     res.status(500).json({ error: 'Error al eliminar cliente' });
+  }
+});
+
+// 6) Login de cliente/usuario
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Faltan email o password' });
+  }
+  try {
+    const [rows] = await pool.query(
+      `SELECT id, nombre, email, rol, estado 
+       FROM usuarios 
+       WHERE email = ? AND password = MD5(?)`,
+      [email, password]
+    );
+    if (rows.length === 0) {
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
+    }
+    res.json({ user: rows[0] });
+  } catch (err) {
+    console.error("Error en login:", err);
+    res.status(500).json({ error: 'Error interno en login' });
   }
 });
 
