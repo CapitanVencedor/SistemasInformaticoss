@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Foro Aurum</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f1c2e;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #0e1726;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      color: gold;
+      font-size: 1.8rem;
+    }
+    nav a {
+      color: white;
+      margin-left: 1.5rem;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    nav a:hover {
+      color: gold;
+    }
+    .forum-wrapper {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 1rem;
+    }
+    .subforum {
+      background-color: #1e2a3a;
+      border-radius: 10px;
+      margin-bottom: 1.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 0 5px rgba(255, 215, 0, 0.1);
+    }
+    .subforum h2 {
+      margin-bottom: 0.5rem;
+      color: gold;
+    }
+    .subforum p {
+      opacity: 0.8;
+      font-size: 0.95rem;
+    }
+    footer {
+      text-align: center;
+      padding: 2rem;
+      background-color: #0e1726;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+    .ad-banner {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 420px;
+  background-color: #1e2a3a;
+  border-right: 2px solid gold;
+  padding: 10px;
+  z-index: 999;
+  box-shadow: 2px 2px 10px rgba(0,0,0,0.4);
+}
+
+.ad-banner img {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  display: block;
+}
+
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Aurum Foro</h1>
+    <nav>
+      <a href="/client/main.html">Inicio</a>
+      <a href="/client/portfolio.html">Portfolio</a>
+      <a href="/client/crypto_chart.html">BTC</a>
+      <a href="oro_chart.html">Oro</a>
+      <a href="/client/contacto.html">Contacto</a>
+    </nav>
+  </header>
+  <div class="ad-banner">
+    <a href="#" target="_blank">
+      <img src="img/add.png" alt="Invierte en oro ahora" />
+    </a>
+  </div>
+  
+
+  <div class="forum-wrapper">
+    <div class="subforum">
+      <h2>GENERAL</h2>
+      <p>Debates abiertos sobre inversiones, estrategias y noticias del mercado.</p>
+    </div>
+    <div class="subforum">
+      <h2>BITCOIN</h2>
+      <p>Todo sobre BTC: análisis, predicciones y adopción global.</p>
+    </div>
+    <div class="subforum">
+      <h2>ETHEREUM</h2>
+      <p>Contratos inteligentes, DeFi, gas fees y desarrollos de la red Ethereum.</p>
+    </div>
+    <div class="subforum">
+      <h2>ESTAFAS</h2>
+      <p>Denuncia y exposición de estafas, webs falsas y proyectos fraudulentos.</p>
+    </div>
+    <div class="subforum">
+      <h2>SHIT-COINS</h2>
+      <p>Comparte tus apuestas arriesgadas o analiza por qué ciertas criptos son humo puro.</p>
+    </div>
+    <div class="subforum">
+      <h2>TENDENCIAS</h2>
+      <p>Criptos emergentes, cambios en el mercado, lo que está de moda (y lo que no).</p>
+    </div>
+    <div class="subforum">
+      <h2>MEME-COINS</h2>
+      <p>Doge, Pepe, Floki y otros tokens nacidos del humor, la comunidad o el caos.</p>
+    </div>
+    <div class="subforum">
+      <h2>ELON MUSK POR FAVOR TUITEA SOBRE MI CRYPTO</h2>
+      <p>Postea tus rezos a Elon, comparte memes o planifica el próximo pump salvaje.</p>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 Aurum Project - Foro | Versión estática sin backend</p>
+  </footer>
+</body>
+</html>

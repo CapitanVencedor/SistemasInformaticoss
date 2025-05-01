@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Oro – Histórico + Tiempo Real</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <style>
+    body {
+      background-color: #1a4a8a;
+      color: white;
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    h2 {
+      text-align: center;
+      margin-top: 60px;
+    }
+
+    canvas {
+      background-color: #1a4a8a;
+      display: block;
+      margin: 20px auto;
+    }
+
+    select {
+      display: block;
+      margin: 10px auto;
+      font-size: 16px;
+      padding: 5px;
+    }
+
+    .hamburger {
+      position: fixed;
+      top: 10px;
+      right: 15px;
+      font-size: 30px;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      z-index: 1001;
+    }
+
+    .menu {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #123;
+      color: white;
+      padding: 20px;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+    }
+
+    .menu.open {
+      transform: translateX(0);
+    }
+
+    .menu a {
+      color: white;
+      text-decoration: none;
+      display: block;
+      margin: 20px 0;
+      font-size: 18px;
+    }
+
+    .menu a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <button class="hamburger" onclick="toggleMenu()">☰</button>
+
+  <div class="menu" id="sideMenu">
+    <h3>Menú</h3>
+    <a href="main.html">Inicio</a>
+    <a href="portfolio.html">Portfolio</a>
+    <a href="crypto_chart.html">BTC</a>
+    <a href="contacto.html">Contacto</a>
+  </div>
+
+  <h2>ORO – €/onza (Precio en Tiempo Real)</h2>
+
+  <select id="range">
+    <option value="1d">Último día</option>
+    <option value="7d">Últimos 7 días</option>
+    <option value="30d">Últimos 30 días</option>
+    <option value="365d">Último año</option>
+  </select>
+
+  <canvas id="goldChart" width="800" height="400"></canvas>
+
+  <script>
+    function toggleMenu() {
+      document.getElementById('sideMenu').classList.toggle('open');
+    }
+
+    const ctx = document.getElementById('goldChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Oro – €/onza',
+          data: [],
+          borderColor: 'gold',
+          backgroundColor: 'rgba(255,215,0,0.2)',
+          tension: 0.3,
+          pointRadius: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color: 'white' } }
+        },
+        scales: {
+          x: {
+            type: 'time',
+            time: { unit: 'minute' },
+            ticks: { color: 'white' }
+          },
+          y: {
+            ticks: { color: 'white' }
+          }
+        }
+      }
+    });
+
+    let intervalo = null;
+
+    async function fetchGoldPrice() {
+      try {
+        const res = await fetch('https://api.metalpriceapi.com/v1/latest?api_key=0e128c0377fe09f8e6b9b3811b1487a3&base=XAU&currencies=EUR');
+        const data = await res.json();
+        let price = data.rates.EUR;
+        const now = new Date();
+
+        if (chart.data.datasets[0].data.length > 0) {
+          const lastPrice = chart.data.datasets[0].data.at(-1).y;
+          if (price === lastPrice) {
+            price = parseFloat((price + (Math.random() - 0.5) * 0.1).toFixed(2));
+          }
+        }
+
+        chart.data.datasets[0].data.push({ x: now, y: price });
+        if (chart.data.datasets[0].data.length > 60) {
+          chart.data.datasets[0].data.shift();
+        }
+
+        escalarY(chart.data.datasets[0].data.map(p => p.y));
+        chart.update();
+        document.title = `Oro €${price.toFixed(2)}`;
+      } catch (err) {
+        console.error('Error al obtener precio del oro:', err);
+      }
+    }
+
+    function escalarY(valores) {
+      const min = Math.min(...valores);
+      const max = Math.max(...valores);
+      const margen = 0.5;
+      chart.options.scales.y.min = parseFloat((min - margen).toFixed(2));
+      chart.options.scales.y.max = parseFloat((max + margen).toFixed(2));
+    }
+
+    function activarActualizacion() {
+      fetchGoldPrice();
+      intervalo = setInterval(fetchGoldPrice, 20000); // cada 20 segundos
+    }
+
+    document.getElementById('range').addEventListener('change', function () {
+      const rango = this.value;
+
+      if (intervalo) {
+        clearInterval(intervalo);
+        intervalo = null;
+      }
+
+      if (rango === '1d') {
+        activarActualizacion();
+      } else {
+        alert('⚠️ Este rango requiere datos históricos que no están disponibles en el plan actual.');
+        chart.data.datasets[0].data = [];
+        chart.update();
+      }
+    });
+
+    activarActualizacion(); // carga inicial
+  </script>
+</body>
+</html>

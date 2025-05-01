@@ -2,31 +2,224 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Main - Aurum Project (Cliente)</title>
-  <!-- Usamos rutas absolutas para asegurarnos que se cargue desde la carpeta /client -->
-  <link rel="stylesheet" href="/client/css/style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aurum Project - Plataforma de Inversión</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #0f1c2e 0%, #13294b 100%);
+      color: #fff;
+      line-height: 1.6;
+    }
+  
+    header {
+      background-color: #0e1726;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+  
+    header h1 {
+      font-size: 1.8rem;
+      color: gold;
+    }
+  
+    nav a {
+      color: #fff;
+      margin-left: 1.5rem;
+      text-decoration: none;
+      font-weight: 500;
+    }
+  
+    nav a:hover {
+      color: gold;
+    }
+  
+    .hero {
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+  
+    .hero h2 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+  
+    .hero p {
+      max-width: 600px;
+      margin: 0 auto;
+      font-size: 1.1rem;
+      opacity: 0.85;
+    }
+  
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      padding: 3rem 2rem;
+    }
+  
+    .feature {
+      background-color: #1e2a3a;
+      padding: 2rem;
+      border-radius: 12px;
+      text-align: center;
+    }
+  
+    .feature h3 {
+      margin-bottom: 0.5rem;
+      color: gold;
+    }
+  
+    .feature p {
+      font-size: 0.95rem;
+      opacity: 0.8;
+    }
+  
+    .gallery {
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+  
+    .gallery h2 {
+      margin-bottom: 1.5rem;
+    }
+  
+    .gallery-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      justify-items: center;
+    }
+  
+    .gallery-container div {
+      background-color: #22334e;
+      border-radius: 8px;
+      overflow: hidden;
+      padding: 8px;
+      box-shadow: inset 0 0 0 2px #2c3e55;
+      transition: transform 0.2s ease;
+    }
+  
+    .gallery-container div:hover {
+      transform: scale(1.03);
+    }
+  
+    .gallery-container img {
+      max-height: 300px;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+    }
+  
+    .forum-preview {
+      padding: 3rem 2rem;
+      background-color: #121a27;
+    }
+  
+    .forum-preview h2 {
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+  
+    .post {
+      background-color: #1b283a;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-left: 4px solid gold;
+      border-radius: 6px;
+    }
+  
+    .post h4 {
+      margin-bottom: 0.5rem;
+    }
+  
+    footer {
+      text-align: center;
+      padding: 2rem;
+      background-color: #0e1726;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+  </style>
+  
 </head>
 <body>
   <header>
     <h1>Aurum Client</h1>
-    <nav class="navbar">
-      <!-- Enlaces absolutos para los archivos del cliente -->
-      <a href="/client/main.html">Inicio</a>
-      <a href="/client/portfolio.html">Portfolio</a>
-      <a href="/client/login.html">Login</a>
+    <nav>
+      <a href="#">Inicio</a>
+      <a href="#portfolio">Portfolio</a>
+      <a href="crypto_chart.html">Criptos</a>
+      <a href="oro_chart.html">Metales</a>
+      <a href="foro.html">Foro</a>
     </nav>
   </header>
 
-  <div class="container">
-    <h2>Bienvenido a la página principal del Cliente</h2>
-    <p>Contenido principal...</p>
-  </div>
+  <section class="hero">
+    <h2>Invierte en Criptomonedas y Metales Preciosos</h2>
+    <p>Bienvenido a la plataforma de compraventa de criptomonedas, oro y plata. Tecnología, seguridad y transparencia en tus inversiones.</p>
+  </section>
+
+  <section class="features">
+    <div class="feature">
+      <h3>Criptomonedas</h3>
+      <p>Compra y vende Bitcoin, Ethereum y más de 50 activos digitales al instante.</p>
+    </div>
+    <div class="feature">
+      <h3>Oro & Plata</h3>
+      <p>Inversión en metales físicos y digitales con respaldo real y seguro.</p>
+    </div>
+    <div class="feature">
+      <h3>Seguridad</h3>
+      <p>Protección avanzada de datos, cifrado de extremo a extremo y custodia en frío.</p>
+    </div>
+  </section>
+
+  <section class="gallery" id="portfolio">
+    <h2>Galería de Activos</h2>
+    <div class="gallery-container">
+      <div>
+        <img src="img/oro.jpg" alt="Lingote de oro" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
+      </div>
+      <div>
+        <img src="img/btc.png" alt="Bitcoin" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
+      </div>
+      <div>
+        <img src="img/voxel.png" alt="Ethereum" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
+      </div>
+      <div>
+        <img src="img/plata.png" alt="Lingotes de plata" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
+      </div>
+    </div>
+  </section>
+  
+
+  <section class="forum-preview" id="foro">
+    <h2>Últimos temas del foro</h2>
+    <div class="post">
+      <h4>[Análisis] ¿Subirá el BTC en junio?</h4>
+      <p>Debate entre analistas sobre si se romperá la resistencia de los 85k €.</p>
+    </div>
+    <div class="post">
+      <h4>[Consulta] Diferencia entre oro digital y físico</h4>
+      <p>Un usuario pregunta sobre los beneficios fiscales y de custodia de cada tipo.</p>
+    </div>
+    <div class="post">
+      <h4>[Alerta] Estafas recientes en plataformas P2P</h4>
+      <p>Comunidad informa sobre sitios fraudulentos de compraventa. Comparte tu experiencia.</p>
+    </div>
+  </section>
 
   <footer>
-    <p>&copy; 2025 Aurum Project - Client</p>
+    <p>&copy; 2025 Aurum Project - Cliente | Diseño moderno, seguridad real.</p>
   </footer>
-
-  <!-- Cargamos el script usando ruta absoluta -->
-  <script src="/client/js/script.js"></script>
 </body>
 </html>
