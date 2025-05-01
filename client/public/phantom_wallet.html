@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Conectar Wallet Phantom</title>
+  <script src="https://unpkg.com/@solana/web3.js@1.95.0/lib/index.iife.js"></script>
+  <style>
+    body {
+      background-color: #1a4a8a;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 100px;
+    }
+
+    button {
+      background-color: gold;
+      color: #000;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    .info {
+      margin-top: 30px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Conectar Wallet Phantom</h2>
+  <button onclick="connectPhantom()">Conectar Wallet</button>
+
+  <div class="info">
+    <p><strong>Dirección:</strong> <span id="address">-</span></p>
+    <p><strong>Saldo (SOL):</strong> <span id="balance">-</span></p>
+  </div>
+
+  <script>
+    async function connectPhantom() {
+      try {
+        if (!window.solana || !window.solana.isPhantom) {
+          alert('Phantom no está instalada.');
+          return;
+        }
+
+        const resp = await window.solana.connect();
+        const publicKey = resp.publicKey.toString();
+        document.getElementById('address').innerText = publicKey;
+
+        // Conexión a la red DEVNET
+        const connection = new solanaWeb3.Connection(
+          solanaWeb3.clusterApiUrl('devnet'),
+          'confirmed'
+        );
+
+        // Obtener saldo
+        const balance = await connection.getBalance(new solanaWeb3.PublicKey(publicKey));
+        const sol = balance / solanaWeb3.LAMPORTS_PER_SOL;
+        document.getElementById('balance').innerText = sol.toFixed(4);
+
+      } catch (err) {
+        console.error("❌ Error al conectar:", err);
+        alert("Error al conectar a Phantom o al obtener el saldo.");
+      }
+    }
+  </script>
+</body>
+</html>
