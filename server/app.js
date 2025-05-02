@@ -19,6 +19,8 @@ app.use('/api/usuarios',      require('./routes/usuarios'));
 app.use('/api/portafolios',   require('./routes/portafolios'));
 app.use('/api/transacciones', require('./routes/transacciones'));
 app.use('/api/activos',       require('./routes/activos'));
+app.use('/api/alertas', require('./routes/alertas'));
+app.use('/api/chartdata', require('./routes/chartdata'));
 
 // **Nueva ruta**: datos históricos de BTC desde CoinGecko
 app.get('/api/crypto/btc', async (req, res) => {

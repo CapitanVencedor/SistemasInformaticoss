@@ -32,6 +32,7 @@ async function cargarDatos() {
       ohlc.push({ x: new Date(time), o: open, h: high, l: low, c: close });
     }
 
+    // ——— Pinta el gráfico ———
     const ctx = document.getElementById('cryptoChart').getContext('2d');
     new Chart(ctx, {
       type: 'candlestick',
@@ -45,6 +46,23 @@ async function cargarDatos() {
         }
       }
     });
+
+    // ——— NUEVO: Guardar los datos OHLC en la base de datos vía API ———
+    await fetch('/api/crypto/prices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        symbol: 'BTC',
+        ohlc: ohlc.map(c => ({
+          time: c.x.toISOString(),
+          open: c.o,
+          high: c.h,
+          low: c.l,
+          close: c.c
+        }))
+      })
+    });
+
   } catch (err) {
     console.error('Error cargando velas:', err);
   }

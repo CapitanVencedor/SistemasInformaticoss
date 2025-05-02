@@ -43,7 +43,21 @@ async function checkBTCChange() {
       const change = ((currentPrice - lastPrice) / lastPrice) * 100;
 
       if (Math.abs(change) >= UMBRAL) {
-        showNotification(`🔔 BTC ha cambiado un ${change.toFixed(2)}% (€${currentPrice})`);
+        const mensaje = `🔔 BTC ha cambiado un ${change.toFixed(2)}% (€${currentPrice})`;
+        showNotification(mensaje);
+
+        // ——— NUEVO: Guardar esta alerta en la base de datos vía API ———
+        await fetch('/api/alertas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tipo: 'BTC',
+            mensaje: mensaje,
+            valor: currentPrice,
+            cambio: change.toFixed(2),
+            timestamp: Date.now()
+          })
+        });
       }
     }
 
