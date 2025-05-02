@@ -123,3 +123,10 @@ app.listen(PORT, () => {
   console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
 });
 
+app.get('/crypto_chart.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/public/crypto_chart.html'));
+});
+
+app.get('/oro_chart.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/public/oro_chart.html'));
+});
