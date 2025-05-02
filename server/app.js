@@ -21,6 +21,8 @@ app.use('/api/transacciones', require('./routes/transacciones'));
 app.use('/api/activos',       require('./routes/activos'));
 app.use('/api/alertas', require('./routes/alertas'));
 app.use('/api/chartdata', require('./routes/chartdata'));
+// montamos todas las rutas de OHLC en '/api/ohlc'
+app.use('/api/ohlc', require('./routes/ohlc_data'));
 
 // **Nueva ruta**: datos históricos de BTC desde CoinGecko
 app.get('/api/crypto/btc', async (req, res) => {

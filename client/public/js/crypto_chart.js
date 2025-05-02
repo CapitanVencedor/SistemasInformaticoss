@@ -14,6 +14,8 @@ Chart.register(
   FinancialController, CandlestickController,
   OhlcElement, CandlestickElement
 );
+// 5) Función que busca los datos y pinta el gráfico
+const res  = await fetch('/api/ohlc');
 
 // 5) Función que busca los datos y pinta el gráfico
 async function cargarDatos() {
