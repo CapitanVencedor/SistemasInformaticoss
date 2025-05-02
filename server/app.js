@@ -123,10 +123,23 @@ app.listen(PORT, () => {
   console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
 });
 
-app.get('/crypto_chart.html', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/public/crypto_chart.html'));
-});
+// Archivos HTML del cliente
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../client/public/login.html')));
+app.get('/login.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/login.html')));
+app.get('/portfolio', (req, res) => res.sendFile(path.join(__dirname, '../client/public/portfolio.html')));
+app.get('/portfolio.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/portfolio.html')));
+app.get('/main', (req, res) => res.sendFile(path.join(__dirname, '../client/public/main.html')));
+app.get('/main.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/main.html')));
+app.get('/registro.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/registro.html')));
+app.get('/crypto_chart.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/crypto_chart.html')));
+app.get('/oro_chart.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/oro_chart.html')));
+app.get('/phantom_wallet.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/phantom_wallet.html')));
+app.get('/foro.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/foro.html')));
+app.get('/logout.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/logout.html')));
 
-app.get('/oro_chart.html', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/public/oro_chart.html'));
-});
+// Archivos HTML del gestor
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/dashboard.html')));
+app.get('/gestor/logout.html', (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/logout.html')));
+app.get('/gestor/index.html', (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/index.html')));
+app.get('/gestor/create_user.html', (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/create_user.html')));
+app.get('/gestor/edit_user.html', (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/edit_user.html')));
