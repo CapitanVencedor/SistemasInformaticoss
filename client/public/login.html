@@ -4,6 +4,29 @@
   <meta charset="UTF-8">
   <title>Aurum Project - Login</title>
   <link rel="stylesheet" href="/client/css/style.css">
+  <style>
+    .btn-registro {
+      background-color: #ffc107; /* Amarillo */
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+      display: inline-block;
+      text-decoration: none;
+      text-align: center;
+    }
+
+    .btn-registro:hover {
+      background-color: #e0a800;
+    }
+
+    .registro-container {
+      text-align: center;
+      margin-top: 15px;
+    }
+  </style>
 </head>
 <body>
   <div class="login-container">
@@ -19,6 +42,10 @@
       </div>
       <button type="submit">Acceder</button>
     </form>
+
+    <div class="registro-container">
+      <a href="/client/registro.html" class="btn-registro">¿No tienes cuenta? Regístrate</a>
+    </div>
   </div>
 
   <script src="/client/js/script.js"></script>
