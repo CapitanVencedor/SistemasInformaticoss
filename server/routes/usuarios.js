@@ -3,6 +3,7 @@ const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
 
+
 // 1) Listar todos los clientes (rol = 'cliente')
 router.get('/', async (req, res) => {
   try {
@@ -124,3 +125,34 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
+
+// 7) Registro desde formulario web
+router.post('/registro', async (req, res) => {
+  const { nombre, email, password } = req.body;
+
+  if (!nombre || !email || !password) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios' });
+  }
+
+  try {
+    // Verificar si el email ya está registrado
+    const [existente] = await pool.query(`SELECT id FROM usuarios WHERE email = ?`, [email]);
+    if (existente.length > 0) {
+      return res.status(409).json({ error: 'El correo ya está registrado' });
+    }
+
+    // Insertar nuevo usuario
+    await pool.query(
+      `INSERT INTO usuarios (nombre, email, password, rol, estado, dosfa, nivel_seguridad) 
+       VALUES (?, ?, MD5(?), 'cliente', 1, 'N', 0)`,
+      [nombre, email, password]
+    );
+
+    // Redirigir al login o responder con éxito
+    res.redirect('/client/login.html');
+
+  } catch (err) {
+    console.error("❌ Error al registrar nuevo usuario:", err);
+    res.status(500).json({ error: 'Error al registrar usuario' });
+  }
+});
