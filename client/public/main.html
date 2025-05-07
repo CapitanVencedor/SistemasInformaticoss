@@ -169,6 +169,57 @@
     <h2>Invierte en Criptomonedas y Metales Preciosos</h2>
     <p>Bienvenido a la plataforma de compraventa de criptomonedas, oro y plata. Tecnología, seguridad y transparencia en tus inversiones.</p>
   </section>
+  
+  <!-- NUEVA SECCIÓN DE OPERACIONES -->
+  <section class="operaciones" style="padding: 3rem 2rem; text-align: center; background-color: #121a27;">
+    <h2 style="margin-bottom: 1rem;">Opera con tus activos</h2>
+  
+    <!-- Comprar -->
+    <form id="formComprarMain" style="margin-bottom: 2rem;">
+      <h3 style="color: gold;">Comprar</h3>
+      <select id="comprarActivoMain" required>
+        <option value="1">Bitcoin</option>
+        <option value="2">Oro</option>
+        <option value="3">Fiat</option>
+      </select>
+      <input type="number" id="comprarCantidadMain" step="any" placeholder="Cantidad" required />
+      <input type="number" id="comprarValorMain" step="any" placeholder="Valor unitario" required />
+      <button type="submit">Comprar</button>
+    </form>
+  
+    <!-- Vender -->
+    <form id="formVenderMain" style="margin-bottom: 2rem;">
+      <h3 style="color: gold;">Vender</h3>
+      <select id="venderActivoMain" required>
+        <option value="1">Bitcoin</option>
+        <option value="2">Oro</option>
+        <option value="3">Fiat</option>
+      </select>
+      <input type="number" id="venderCantidadMain" step="any" placeholder="Cantidad" required />
+      <input type="number" id="venderValorMain" step="any" placeholder="Valor unitario" required />
+      <button type="submit">Vender</button>
+    </form>
+  
+    <!-- Swap -->
+    <form id="formSwapMain">
+      <h3 style="color: gold;">Swap</h3>
+      <label>De:</label>
+      <select id="swapDe" required>
+        <option value="1">Bitcoin</option>
+        <option value="2">Oro</option>
+        <option value="3">Fiat</option>
+      </select>
+      <label>A:</label>
+      <select id="swapA" required>
+        <option value="1">Bitcoin</option>
+        <option value="2">Oro</option>
+        <option value="3">Fiat</option>
+      </select>
+      <input type="number" id="swapCantidad" step="any" placeholder="Cantidad" required />
+      <input type="number" id="swapValor" step="any" placeholder="Valor unitario (nuevo activo)" required />
+      <button type="submit">Swapear</button>
+    </form>
+  </section>
 
   <section class="features">
     <div class="feature">
@@ -231,4 +282,52 @@
   <script src="js/alertas_btc.js"></script>
 
 </body>
+<script>
+  const portafolioId = 1; // Substitueix per l'ID real de l'usuari si es guarda en localStorage
+
+  async function enviarTransaccion(data, endpoint) {
+    const res = await fetch(`/transacciones/${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) alert(`Transacción ${endpoint} completada`);
+    else alert(`Error al realizar ${endpoint}`);
+  }
+
+  document.getElementById('formComprarMain').addEventListener('submit', e => {
+    e.preventDefault();
+    enviarTransaccion({
+      portafolio_id: portafolioId,
+      activo_id: +document.getElementById('comprarActivoMain').value,
+      cantidad: +document.getElementById('comprarCantidadMain').value,
+      valor_unitario: +document.getElementById('comprarValorMain').value,
+      ip_origen: location.hostname
+    }, 'comprar');
+  });
+
+  document.getElementById('formVenderMain').addEventListener('submit', e => {
+    e.preventDefault();
+    enviarTransaccion({
+      portafolio_id: portafolioId,
+      activo_id: +document.getElementById('venderActivoMain').value,
+      cantidad: +document.getElementById('venderCantidadMain').value,
+      valor_unitario: +document.getElementById('venderValorMain').value,
+      ip_origen: location.hostname
+    }, 'vender');
+  });
+
+  document.getElementById('formSwapMain').addEventListener('submit', e => {
+    e.preventDefault();
+    enviarTransaccion({
+      portafolio_id: portafolioId,
+      activo_origen_id: +document.getElementById('swapDe').value,
+      activo_destino_id: +document.getElementById('swapA').value,
+      cantidad: +document.getElementById('swapCantidad').value,
+      valor_unitario: +document.getElementById('swapValor').value,
+      ip_origen: location.hostname
+    }, 'swap');
+  });
+</script>
+
 </html>

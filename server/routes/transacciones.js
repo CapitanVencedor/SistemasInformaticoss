@@ -93,4 +93,74 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+
+
+
+// COMPRAR ACTIU
+router.post('/comprar', async (req, res) => {
+  const { portafolio_id, activo_id, cantidad, valor_unitario, ip_origen } = req.body;
+  const tipo = 'compra';
+
+  try {
+    // 1. Registra la transacció
+    await pool.query(
+      `INSERT INTO transacciones 
+       (portafolio_id, activo_id, tipo, cantidad, valor_unitario, ip_origen, fecha)
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [portafolio_id, activo_id, tipo, cantidad, valor_unitario, ip_origen]
+    );
+
+    // 2. Actualitza o crea registre al portafoli
+    await pool.query(`
+      INSERT INTO portafolios (id, usuario_id, activo_id, cantidad)
+      VALUES (?, (SELECT usuario_id FROM portafolios WHERE id = ?), ?, ?)
+      ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)
+    `, [portafolio_id, portafolio_id, activo_id, cantidad]);
+
+    res.json({ success: true, mensaje: 'Compra registrada correctament' });
+  } catch (err) {
+    console.error("Error en la compra:", err);
+    res.status(500).json({ error: 'Error al registrar la compra' });
+  }
+});
+
+// VENDRE ACTIU
+router.post('/vender', async (req, res) => {
+  const { portafolio_id, activo_id, cantidad, valor_unitario, ip_origen } = req.body;
+  const tipo = 'venta';
+
+  try {
+    // 1. Comprova si hi ha suficient quantitat a l’portafoli
+    const [rows] = await pool.query(
+      'SELECT cantidad FROM portafolios WHERE id = ? AND activo_id = ?',
+      [portafolio_id, activo_id]
+    );
+
+    if (!rows.length || rows[0].cantidad < cantidad) {
+      return res.status(400).json({ error: 'Quantitat insuficient per vendre' });
+    }
+
+    // 2. Registra la transacció
+    await pool.query(
+      `INSERT INTO transacciones 
+       (portafolio_id, activo_id, tipo, cantidad, valor_unitario, ip_origen, fecha)
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [portafolio_id, activo_id, tipo, cantidad, valor_unitario, ip_origen]
+    );
+
+    // 3. Actualitza el portafoli restant la quantitat
+    await pool.query(`
+      UPDATE portafolios 
+      SET cantidad = cantidad - ?
+      WHERE id = ? AND activo_id = ?
+    `, [cantidad, portafolio_id, activo_id]);
+
+    res.json({ success: true, mensaje: 'Venda registrada correctament' });
+  } catch (err) {
+    console.error("Error en la venda:", err);
+    res.status(500).json({ error: 'Error al registrar la venda' });
+  }
+});
+
+
 module.exports = router;
