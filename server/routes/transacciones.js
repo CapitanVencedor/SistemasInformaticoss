@@ -162,5 +162,57 @@ router.post('/vender', async (req, res) => {
   }
 });
 
+// SWAP ENTRE ACTIVOS
+router.post('/swap', async (req, res) => {
+  const { portafolio_id, activo_origen_id, activo_destino_id, cantidad, valor_unitario, ip_origen } = req.body;
+
+  try {
+    // Verifica si hay suficiente cantidad del activo origen
+    const [rows] = await pool.query(
+      'SELECT cantidad FROM portafolios WHERE id = ? AND activo_id = ?',
+      [portafolio_id, activo_origen_id]
+    );
+
+    if (!rows.length || rows[0].cantidad < cantidad) {
+      return res.status(400).json({ error: 'Quantitat insuficient per swap' });
+    }
+
+    // Registra transacción de salida (origen)
+    await pool.query(
+      `INSERT INTO transacciones 
+       (portafolio_id, activo_id, tipo, cantidad, valor_unitario, ip_origen, fecha)
+       VALUES (?, ?, 'swap_origen', ?, ?, ?, NOW())`,
+      [portafolio_id, activo_origen_id, cantidad, valor_unitario, ip_origen]
+    );
+
+    // Registra transacción de entrada (destino)
+    await pool.query(
+      `INSERT INTO transacciones 
+       (portafolio_id, activo_id, tipo, cantidad, valor_unitario, ip_origen, fecha)
+       VALUES (?, ?, 'swap_destino', ?, ?, ?, NOW())`,
+      [portafolio_id, activo_destino_id, cantidad, valor_unitario, ip_origen]
+    );
+
+    // Actualiza portafolio: resta del origen
+    await pool.query(`
+      UPDATE portafolios 
+      SET cantidad = cantidad - ?
+      WHERE id = ? AND activo_id = ?
+    `, [cantidad, portafolio_id, activo_origen_id]);
+
+    // Actualiza portafolio: suma al destino
+    await pool.query(`
+      INSERT INTO portafolios (id, usuario_id, activo_id, cantidad)
+      VALUES (?, (SELECT usuario_id FROM portafolios WHERE id = ?), ?, ?)
+      ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)
+    `, [portafolio_id, portafolio_id, activo_destino_id, cantidad]);
+
+    res.json({ success: true, mensaje: 'Swap realitzat correctament' });
+  } catch (err) {
+    console.error("Error en el swap:", err);
+    res.status(500).json({ error: 'Error al realitzar el swap' });
+  }
+});
+
 
 module.exports = router;
