@@ -140,3 +140,127 @@ footer {
   font-size: 0.9rem;
   opacity: 0.7;
 }
+/* ===== Ajustes para la sección de operaciones ===== */
+.operaciones form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.operaciones form h3 {
+  flex-basis: 100%;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.operaciones select,
+.operaciones input {
+  font-size: 1rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #1e2a3a;
+  color: #fff;
+}
+
+/* Anchos recomendados; ajústalos a tu gusto */
+#comprarActivoMain,
+#venderActivoMain,
+#swapDe,
+#swapA {
+  width: 120px;
+}
+
+#comprarCantidadMain,
+#venderCantidadMain,
+#swapCantidad {
+  width: 100px;
+}
+
+#comprarValorMain,
+#venderValorMain,
+#swapValor {
+  width: 140px;
+}
+
+/* Botones más grandes y con un poco de margen */
+.operaciones button {
+  font-size: 1rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Opcional: en pantallas muy pequeñas, apilar */
+@media (max-width: 600px) {
+  .operaciones form {
+    flex-direction: column;
+  }
+  .operaciones button {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+/* ====== Operaciones: más grande y espacioso ====== */
+.operaciones {
+  padding: 4rem 2rem;        /* más espacio arriba y abajo */
+}
+
+.operaciones h2 {
+  font-size: 2rem;           /* título más grande */
+  margin-bottom: 1.5rem;
+}
+
+.operaciones h3 {
+  font-size: 1.4rem;         /* subtítulos (Comprar/Vender/Swap) */
+  margin-bottom: 1rem;
+  color: gold !important;
+}
+
+.operaciones form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;                 /* más espacio entre elementos */
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.operaciones select,
+.operaciones input {
+  font-size: 1.1rem;
+  padding: 0.75rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: #1e2a3a;
+  color: #f0f0f0;
+  min-width: 140px;          /* todos un ancho mínimo */
+}
+
+.operaciones input[readonly] {
+  background: #2c3e55;       /* un poquito más oscuro para distinguir */
+}
+
+.operaciones button {
+  font-size: 1.1rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+/* Responsive: en móvil apilar */
+@media (max-width: 600px) {
+  .operaciones form {
+    flex-direction: column;
+  }
+  .operaciones select,
+  .operaciones input,
+  .operaciones button {
+    width: 100%;
+    min-width: auto;
+  }
+}
