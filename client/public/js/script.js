@@ -1,36 +1,58 @@
-// gestor/public/js/script.js   (idéntico si lo pones en client/public/js/script.js)
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Script unificado cargado');
+  console.log('Script cargado');
 
   // ——— LOGIN ——————————————————————————————
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
-    loginForm.addEventListener('submit', e => {
+    loginForm.addEventListener('submit', async e => {
       e.preventDefault();
-      const u = document.getElementById('username').value.trim();
-      const p = document.getElementById('password').value;
-      if (u === 'admin' && p === '1234') {
-        alert('Login correcto');
+      const email = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/api/usuarios/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || 'Usuario o contraseña incorrectos');
+          return;
+        }
+
+        // ✅ Login correcto
         localStorage.setItem('sesionIniciada', 'true');
-        window.location.href = '/dashboard';
-      } else {
-        alert('Usuario o contraseña incorrectos');
+        localStorage.setItem('usuario', JSON.stringify(data.user));
+        localStorage.setItem('rol', data.user.rol); 
+        
+                // Redirige según rol
+        if (data.user.rol === 'admin' || data.user.rol === 'gestor') {
+          window.location.href = '/gestor/dashboard.html';
+        } else {
+          window.location.href = '/main.html';
+        }
+
+      } catch (err) {
+        console.error('Error en login:', err);
+        alert('Error al conectar con el servidor');
       }
     });
   }
 
-  // ——— GESTOR: CRUD CLIENTES —————————————————————
+  // ——— CRUD CLIENTES (GESTOR) ——————————————————————
   const btnAgregarCliente = document.getElementById('btnAgregar');
   const modalCliente      = document.getElementById('modalCliente');
   const clienteForm       = document.getElementById('clienteForm');
   const clienteTable      = document.getElementById('clienteTable');
-  let   clientes = []; // ya no cargamos desde localStorage
+  let   clientes = [];
 
-  // Carga inicial de clientes desde la API
   async function loadClientes() {
     try {
       const res = await fetch('/api/usuarios');
-      clientes    = await res.json();
+      clientes = await res.json();
       refreshClienteTable();
     } catch (err) {
       console.error('Error cargando clientes:', err);
@@ -50,22 +72,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const email   = document.getElementById('email').value.trim();
 
       if (idField) {
-        // Editar cliente
         await fetch(`/api/usuarios/${idField}`, {
-          method:  'PUT',
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ nombre, email, estado: 1 })
+          body: JSON.stringify({ nombre, email, estado: 1 })
         });
       } else {
-        // Crear nuevo cliente
         await fetch('/api/usuarios', {
-          method:  'POST',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ nombre, email })
+          body: JSON.stringify({ nombre, email })
         });
       }
 
-      await loadClientes();       // Recarga desde el servidor
+      await loadClientes();
       clienteForm.reset();
       closeModal(modalCliente);
     });
@@ -104,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ——— CLIENTE: CRUD ACTIVOS —————————————————————
+  // ——— CRUD ACTIVOS (CLIENTE) ——————————————————————
   const btnAgregarActivo = document.getElementById('btnAgregarActivo');
   const modalActivo      = document.getElementById('modalActivo');
   const activoForm       = document.getElementById('activoForm');

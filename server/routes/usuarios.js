@@ -2,7 +2,7 @@
 const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
-
+const bcrypt  = require('bcrypt');
 
 // 1) Listar todos los clientes (rol = 'cliente')
 router.get('/', async (req, res) => {
@@ -39,15 +39,21 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 3) Crear nuevo cliente
+// 3) Crear nuevo cliente (con contraseña por defecto '1234', hasheada con bcrypt)
 router.post('/', async (req, res) => {
   const { nombre, email } = req.body;
+  if (!nombre || !email) {
+    return res.status(400).json({ error: 'Faltan nombre o email' });
+  }
   try {
+    // contraseña por defecto
+    const hashedPassword = await bcrypt.hash('1234', 10);
+
     const [result] = await pool.query(
       `INSERT INTO usuarios 
          (nombre, email, password, rol, estado, dosfa, nivel_seguridad) 
-       VALUES (?, ?, MD5(?), 'cliente', 1, 'N', 0)`,
-      [nombre, email, '1234']
+       VALUES (?, ?, ?, 'cliente', 1, 'N', 0)`,
+      [nombre, email, hashedPassword]
     );
     res.status(201).json({ 
       id: result.insertId, 
@@ -103,28 +109,43 @@ router.delete('/:id', async (req, res) => {
 
 // 6) Login de cliente/usuario
 router.post('/login', async (req, res) => {
+  console.log('>>> Login body:', req.body);
   const { email, password } = req.body;
+  console.log('>>> Parámetros recibidos →', { email, password });
+
   if (!email || !password) {
     return res.status(400).json({ error: 'Faltan email o password' });
   }
   try {
+    // Traemos usuario (incluyendo el hash de password)
     const [rows] = await pool.query(
-      `SELECT id, nombre, email, rol, estado 
+      `SELECT id, nombre, email, rol, estado, password 
        FROM usuarios 
-       WHERE email = ? AND password = MD5(?)`,
-      [email, password]
+       WHERE email = ? AND estado = 1`,
+      [email]
     );
+    console.log('>>> Filas devueltas por la consulta:', rows);
     if (rows.length === 0) {
       return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
-    res.json({ user: rows[0] });
+    const user = rows[0];
+    console.log('>>> Hash almacenado en BD:', user.password);
+
+    // Comparamos con bcrypt
+    const match = await bcrypt.compare(password, user.password);
+    console.log('>>> Resultado bcrypt.compare:', match);
+    if (!match) {
+      return res.status(401).json({ error: 'Credenciales incorrectas' });
+    }
+
+    // No devolvemos el hash al cliente
+    delete user.password;
+    res.json({ user });
   } catch (err) {
     console.error("Error en login:", err);
     res.status(500).json({ error: 'Error interno en login' });
   }
 });
-
-module.exports = router;
 
 // 7) Registro desde formulario web
 router.post('/registro', async (req, res) => {
@@ -136,23 +157,36 @@ router.post('/registro', async (req, res) => {
 
   try {
     // Verificar si el email ya está registrado
-    const [existente] = await pool.query(`SELECT id FROM usuarios WHERE email = ?`, [email]);
+    const [existente] = await pool.query(
+      `SELECT id FROM usuarios WHERE email = ?`,
+      [email]
+    );
     if (existente.length > 0) {
       return res.status(409).json({ error: 'El correo ya está registrado' });
     }
 
+    // Hash de la contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // Insertar nuevo usuario
-    await pool.query(
-      `INSERT INTO usuarios (nombre, email, password, rol, estado, dosfa, nivel_seguridad) 
-       VALUES (?, ?, MD5(?), 'cliente', 1, 'N', 0)`,
-      [nombre, email, password]
+    const [result] = await pool.query(
+      `INSERT INTO usuarios 
+         (nombre, email, password, rol, estado, dosfa, nivel_seguridad) 
+       VALUES (?, ?, ?, 'cliente', 1, 'N', 0)`,
+      [nombre, email, hashedPassword]
     );
 
-    // Redirigir al login o responder con éxito
-    res.redirect('/client/login.html');
-
+    // Responder con los datos básicos
+    res.status(201).json({
+      id: result.insertId,
+      nombre,
+      email,
+      estado: 1
+    });
   } catch (err) {
     console.error("❌ Error al registrar nuevo usuario:", err);
     res.status(500).json({ error: 'Error al registrar usuario' });
   }
 });
+
+module.exports = router;

@@ -7,9 +7,12 @@
 </head>
 <body>
 
-  <!-- Control de acceso: si no hay sesión iniciada, redirige al login -->
+  <!-- Control de acceso: solo permite gestor o admin -->
   <script>
-    if (localStorage.getItem('sesionIniciada') !== 'true') {
+    const sesion = localStorage.getItem('sesionIniciada');
+    const rol = localStorage.getItem('rol');
+    if (sesion !== 'true' || (rol !== 'gestor' && rol !== 'admin')) {
+      alert('Acceso restringido. Solo para gestores o administradores.');
       window.location.href = '/';
     }
   </script>
@@ -17,11 +20,10 @@
   <nav>
     <h1>Aurum Gestor Dashboard</h1>
     <ul>
-      <li><a href="/dashboard">Gestion de Clientes</a></li>
+      <li><a href="/dashboard">Gestión de Clientes</a></li>
       <li><a href="/portfolio">Portafolios</a></li>
       <li><a href="/client/main.html">Cliente</a></li>
       <li><a href="/gestor/logout.html">Cerrar Sesión</a></li>
-      
     </ul>
   </nav>
 
