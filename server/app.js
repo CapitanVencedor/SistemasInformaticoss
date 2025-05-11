@@ -1,172 +1,112 @@
-// server/app.js
 const express = require('express');
 const path    = require('path');
 const cron    = require('node-cron');
 const axios   = require('axios');
-const app     = express();
-const PORT    = process.env.PORT || 3000;
-const cors = require('cors');
+const cors    = require('cors');
+
+const app  = express();
+const PORT = process.env.PORT || 3000;
+
+// CORS
 app.use(cors());
 
 // Conexión a la base de datos
 require('./config/db');
 
-// Middlewares
+// Middlewares para JSON y formularios
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, '../client/public')));
+app.use('/client', express.static(path.join(__dirname, '../client/public')));
 
-// Rutas de API existentes
+// Rutas de API
 app.use('/api/usuarios',      require('./routes/usuarios'));
 app.use('/api/portafolios',   require('./routes/portafolios'));
 app.use('/api/transacciones', require('./routes/transacciones'));
 app.use('/api/activos',       require('./routes/activos'));
-app.use('/api/alertas', require('./routes/alertas'));
-app.use('/api/chartdata', require('./routes/chartdata'));
-// montamos todas las rutas de OHLC en '/api/ohlc'
-app.use('/api/ohlc', require('./routes/ohlc_data'));
+app.use('/api/alertas',       require('./routes/alertas'));
+app.use('/api/chartdata',     require('./routes/chartdata'));
+app.use('/api/ohlc',          require('./routes/ohlc_data'));
 
-// **Nueva ruta**: datos históricos de BTC desde CoinGecko
+// Caché en memoria para BTC histórico (10 min)
+let btcHistoryCache = { timestamp: 0, data: null };
+const BTC_HISTORY_TTL = 10 * 60 * 1000;
+
 app.get('/api/crypto/btc', async (req, res) => {
+  if (btcHistoryCache.data && (Date.now() - btcHistoryCache.timestamp) < BTC_HISTORY_TTL) {
+    return res.json(btcHistoryCache.data);
+  }
   try {
     const { data } = await axios.get(
       'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart',
-      {
-        params: {
-          vs_currency: 'eur',
-          days: 7,
-          interval: 'daily'
-        }
-      }
+      { params: { vs_currency: 'eur', days: 7, interval: 'daily' } }
     );
+    btcHistoryCache = { timestamp: Date.now(), data };
     res.json(data);
   } catch (err) {
-    console.error('Error CoinGecko:', err.message);
-    res.status(500).json({ error: 'No se pudieron obtener datos de BTC' });
-  }
-});
-
-// Caché en memoria
-let btcCache = {
-  timestamp: 0,
-  data: null
-};
-// Tiempo de vida del caché (en ms). Aquí 10 minutos.
-const CACHE_TTL = 10 * 60 * 1000;
-
-app.get('/api/crypto/btc', async (req, res) => {
-  // Si hay datos y no han expirado, devuelve el caché
-  if (btcCache.data && (Date.now() - btcCache.timestamp) < CACHE_TTL) {
-    return res.json(btcCache.data);
-  }
-
-  try {
-    const { data } = await axios.get(
-      'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart',
-      {
-        params: {
-          vs_currency: 'eur',
-          days: 7,
-          interval: 'daily'
-        }
-      }
-    );
-    // Actualiza caché
-    btcCache = {
-      timestamp: Date.now(),
-      data
-    };
-    return res.json(data);
-
-  } catch (err) {
-    // Si la API devuelve 429, devolvemos un mensaje claro
     if (err.response && err.response.status === 429) {
-      console.warn('CoinGecko rate limit hit');
-      return res.status(429).json({
-        error: 'Rate limit de CoinGecko. Prueba de nuevo en unos minutos.'
-      });
+      return res.status(429).json({ error: 'Rate limit de CoinGecko. Prueba en unos minutos.' });
     }
-    console.error('Error CoinGecko:', err.message);
-    res.status(500).json({ error: 'No se pudieron obtener datos de BTC' });
+    console.error('Error CoinGecko historial BTC:', err.message);
+    res.status(500).json({ error: 'No se pudieron obtener datos históricos de BTC' });
   }
 });
-// En server/app.js, tras tus otros app.get(...)
-let precioCache = {
-  timestamp: 0,
-  precio: null
-};
-const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutos
+
+// Caché en memoria para precio BTC (2 min)
+let btcPriceCache = { timestamp: 0, precio: null };
+const BTC_PRICE_TTL = 2 * 60 * 1000;
 
 app.get('/api/crypto/price', async (req, res) => {
-  // Si el cache aún es válido, lo devolvemos
-  if (precioCache.precio !== null && (Date.now() - precioCache.timestamp) < CACHE_TTL_MS) {
-    return res.json({ precio: precioCache.precio });
+  if (btcPriceCache.precio !== null && (Date.now() - btcPriceCache.timestamp) < BTC_PRICE_TTL) {
+    return res.json({ precio: btcPriceCache.precio });
   }
-
   try {
-    // Consulta CoinGecko para obtener el precio de Bitcoin en EUR
     const { data } = await axios.get(
       'https://api.coingecko.com/api/v3/simple/price',
-      {
-        params: {
-          ids: 'bitcoin',
-          vs_currencies: 'eur'
-        }
-      }
+      { params: { ids: 'bitcoin', vs_currencies: 'eur' } }
     );
-
     const precio = data.bitcoin.eur;
-    // Actualiza cache
-    precioCache = {
-      timestamp: Date.now(),
-      precio
-    };
-    return res.json({ precio });
-
+    btcPriceCache = { timestamp: Date.now(), precio };
+    res.json({ precio });
   } catch (err) {
-    console.error('Error al obtener precio BTC desde CoinGecko:', err.message);
-    return res.status(500).json({ error: 'No pude obtener el precio BTC' });
+    console.error('Error CoinGecko precio BTC:', err.message);
+    res.status(500).json({ error: 'No se pudo obtener el precio de BTC' });
   }
 });
 
-
-// Front-end estático
+// Servir front-end estático
 app.use('/client', express.static(path.join(__dirname, '../client/public')));
 app.use('/gestor', express.static(path.join(__dirname, '../gestor/public')));
 
-// Páginas principales
-app.get('/',         (req, res) => res.sendFile(path.join(__dirname, '../client/public/login.html')));
-app.get('/dashboard',(req, res) => res.sendFile(path.join(__dirname, '../gestor/public/dashboard.html')));
-app.get('/portfolio',(req, res) => res.sendFile(path.join(__dirname, '../client/public/portfolio.html')));
-app.get('/main',     (req, res) => res.sendFile(path.join(__dirname, '../client/public/main.html')));
+// Archivos HTML del cliente
+app.get('/',               (req, res) => res.sendFile(path.join(__dirname, '../client/public/login.html')));
+app.get('/login.html',     (req, res) => res.sendFile(path.join(__dirname, '../client/public/login.html')));
+app.get('/portfolio',      (req, res) => res.sendFile(path.join(__dirname, '../client/public/portfolio.html')));
+app.get('/portfolio.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/portfolio.html')));
+app.get('/main',           (req, res) => res.sendFile(path.join(__dirname, '../client/public/main.html')));
+app.get('/main.html',      (req, res) => res.sendFile(path.join(__dirname, '../client/public/main.html')));
+app.get('/registro.html',  (req, res) => res.sendFile(path.join(__dirname, '../client/public/registro.html')));
+app.get('/crypto_chart.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/crypto_chart.html')));
+app.get('/oro_chart.html',    (req, res) => res.sendFile(path.join(__dirname, '../client/public/oro_chart.html')));
+app.get('/phantom_wallet.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/phantom_wallet.html')));
+app.get('/foro.html',          (req, res) => res.sendFile(path.join(__dirname, '../client/public/foro.html')));
+app.get('/logout.html',        (req, res) => res.sendFile(path.join(__dirname, '../client/public/logout.html')));
 
-// Tarea cron cada 15 minutos
+// Archivos HTML del gestor
+app.get('/dashboard',            (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/dashboard.html')));
+app.get('/gestor/logout.html',   (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/logout.html')));
+app.get('/gestor/index.html',    (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/index.html')));
+app.get('/gestor/create_user.html', (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/create_user.html')));
+app.get('/gestor/edit_user.html',   (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/edit_user.html')));
+
+// Cron job cada 15 minutos para monitorizar APIs
 const { monitorAPI } = require('./scripts/monitor_apis');
 cron.schedule('*/15 * * * *', () => {
-  console.log('⏱️  Ejecutando monitorAPI cada 15 minutos…');
+  console.log('⏱️ Ejecutando monitorAPI…');
   monitorAPI();
 });
 
 // Arranca el servidor
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
+  console.log(`🚀 Servidor en http://localhost:${PORT}`);
 });
-
-// Archivos HTML del cliente
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../client/public/login.html')));
-app.get('/login.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/login.html')));
-app.get('/portfolio', (req, res) => res.sendFile(path.join(__dirname, '../client/public/portfolio.html')));
-app.get('/portfolio.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/portfolio.html')));
-app.get('/main', (req, res) => res.sendFile(path.join(__dirname, '../client/public/main.html')));
-app.get('/main.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/main.html')));
-app.get('/registro.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/registro.html')));
-app.get('/crypto_chart.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/crypto_chart.html')));
-app.get('/oro_chart.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/oro_chart.html')));
-app.get('/phantom_wallet.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/phantom_wallet.html')));
-app.get('/foro.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/foro.html')));
-app.get('/logout.html', (req, res) => res.sendFile(path.join(__dirname, '../client/public/logout.html')));
-
-// Archivos HTML del gestor
-app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/dashboard.html')));
-app.get('/gestor/logout.html', (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/logout.html')));
-app.get('/gestor/index.html', (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/index.html')));
-app.get('/gestor/create_user.html', (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/create_user.html')));
-app.get('/gestor/edit_user.html', (req, res) => res.sendFile(path.join(__dirname, '../gestor/public/edit_user.html')));

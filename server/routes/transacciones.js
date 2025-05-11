@@ -127,7 +127,7 @@ router.delete('/:id', async (req, res) => {
 
 // --- RUTAS ESPECIALES PARA COMPRAR, VENDER Y SWAP ---
 
-// 6) COMPRAR activo
+// --- 6) COMPRAR activo ---
 router.post('/comprar', async (req, res) => {
   const { portafolio_id, activo_id, cantidad, precio, ip_origen } = req.body;
   const tipo = 'compra';
@@ -141,17 +141,19 @@ router.post('/comprar', async (req, res) => {
       [portafolio_id, activo_id, tipo, cantidad, precio, ip_origen]
     );
 
-    // 2. Ajuste de saldo en portafolios_activos
-    await pool.query(`
-      INSERT INTO portafolios_activos (portafolio_id, activo_id, cantidad)
-      VALUES (?, ?, ?)
-      ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)
-    `, [portafolio_id, activo_id, cantidad]);
+    // 2. Upsert en portafolios_activos
+    await pool.query(
+      `INSERT INTO portafolios_activos (portafolio_id, activo_id, cantidad)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)`,
+      [portafolio_id, activo_id, cantidad]
+    );
 
-    res.json({ success: true, mensaje: 'Compra registrada correctamente' });
+    // 3. Devolver éxito
+    return res.json({ success: true, mensaje: 'Compra registrada correctamente' });
   } catch (err) {
     console.error("Error en la compra:", err);
-    res.status(500).json({ error: 'Error al registrar la compra' });
+    return res.status(500).json({ error: 'Error al registrar la compra' });
   }
 });
 

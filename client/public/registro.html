@@ -17,7 +17,7 @@
   <div class="login-container">
     <h2 style="text-align:center; margin-bottom: 1.5rem;">Crear Cuenta</h2>
 
-    <form action="/api/usuarios/registro" method="POST" id="registroForm">
+    <form id="registroForm">
       <div class="input-group">
         <label for="nombre">Nombre completo</label>
         <input type="text" name="nombre" id="nombre" required placeholder="Tu nombre">
@@ -45,15 +45,42 @@
   </div>
 
   <script>
-    // Validación rápida de contraseñas antes de enviar
-    const form = document.getElementById('registroForm');
-    form.addEventListener('submit', e => {
-      const pwd = document.getElementById('password').value;
-      const confirm = document.getElementById('confirmar').value;
+    document.getElementById('registroForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
 
-      if (pwd !== confirm) {
-        e.preventDefault();
-        alert("Las contraseñas no coinciden.");
+      // 1) Validación local de contraseñas
+      const pwd     = document.getElementById('password').value;
+      const confirmar = document.getElementById('confirmar').value;
+      if (pwd !== confirmar) {
+        return alert('Las contraseñas no coinciden.');
+      }
+
+      // 2) Construir el payload
+      const payload = {
+        nombre:   document.getElementById('nombre').value.trim(),
+        email:    document.getElementById('email').value.trim(),
+        password: pwd
+      };
+
+      try {
+        // 3) Llamada a la API
+        const res = await fetch('/api/usuarios/registro', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          // 4) Éxito: vamos al login
+          window.location.href = '/login.html';
+        } else {
+          // 5) Error: mostramos mensaje
+          const err = await res.json();
+          alert(err.error || 'Error al registrarse');
+        }
+      } catch (networkError) {
+        console.error('Fetch error:', networkError);
+        alert('Error de red. Intenta de nuevo más tarde.');
       }
     });
   </script>

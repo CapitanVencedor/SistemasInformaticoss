@@ -141,4 +141,18 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// 6) Obtener todos los activos de un portafolio
+router.get('/:id/activos', async (req, res) => {
+  const { id: portafolio_id } = req.params;
+  const [rows] = await pool.query(`
+    SELECT pa.activo_id,
+           a.nombre       AS nombre_activo,
+           pa.cantidad
+      FROM portafolios_activos pa
+      JOIN activos a ON pa.activo_id = a.id
+     WHERE pa.portafolio_id = ?
+  `, [portafolio_id]);
+  res.json(rows);
+});
+
 module.exports = router;

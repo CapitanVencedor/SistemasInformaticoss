@@ -35,18 +35,15 @@
     <section class="portfolio-section">
       <h2>Mis Activos</h2>
       <button id="btnAgregarActivo">Agregar Nuevo Activo</button>
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Tipo de Activo</th>
-            <th>Cantidad</th>
-            <th>Precio</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="activoTable"></tbody>
-      </table>
+<table>
+  <thead>
+    <tr>
+      <th>Tipo de Activo</th>
+      <th>Cantidad</th>
+    </tr>
+  </thead>
+  <tbody id="activoTable"></tbody>
+</table>
     </section>
   </main>
   
@@ -76,6 +73,41 @@
       </form>
     </div>
   </div>
+  <script>
+   const portafolioId = localStorage.getItem('portafolioId');
+  if (!portafolioId) {
+    alert('No se detecta tu portafolio. Vuelve a iniciar sesión.');
+    location.href = '/login.html';
+  }
+
+  async function loadPortafolio() {
+    try {
+      // 1) Traer lista de activos
+      const res = await fetch(`/api/portafolios/${portafolioId}/activos`);
+      if (!res.ok) throw new Error('No pudo leer activos');
+      const activos = await res.json();
+
+      // 2) Rellenar tabla
+      const tbody = document.getElementById('activoTable');
+      tbody.innerHTML = '';
+      activos.forEach(a => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${a.nombre_activo}</td>
+          <td>${a.cantidad}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      console.error('Error cargando portafolio:', err);
+      alert('No se pudo cargar tu portafolio');
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', loadPortafolio);
+  
+</script>
+
 
   <script src="/client/js/script.js"></script>
   <script src="/client/js/operaciones.js"></script>
