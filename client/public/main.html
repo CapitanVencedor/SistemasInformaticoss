@@ -160,8 +160,6 @@
     <p>&copy; 2025 Aurum Project - Cliente | Diseño moderno, seguridad real.</p>
   </footer>
 
-  <!-- Ajuste URL alertas_btc.js -->
- 
 
   <!-- SCRIPT DE COMPRA CORREGIDO -->
 <script>
@@ -180,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const fVend = document.getElementById('formVenderMain');
 
   const sDe   = document.getElementById('swapDe');
+  const sSw   = document.getElementById('swapA'); 
   const cSw   = document.getElementById('swapCantidad');
   const vSw   = document.getElementById('swapValor');
   const fSw   = document.getElementById('formSwapMain');
@@ -238,9 +237,11 @@ document.addEventListener('DOMContentLoaded', () => {
       vSw.value = '';
     }
   }
-  sDe.addEventListener('change', recSwap);
+
   document.getElementById('swapA').addEventListener('change', recSwap);
+  sDe.addEventListener('change', recSwap);
   cSw.addEventListener('input', recSwap);
+  sSw.addEventListener('change', recSwap);
 
   // Helper POST
   async function postTx(path, body) {
@@ -304,36 +305,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Submit swap
-  fSw.addEventListener('submit', async e => {
-    e.preventDefault();
-    const d = +sDe.value, a = +document.getElementById('swapA').value;
-    const q = parseFloat(cSw.value), o = parseFloat(vSw.value);
-    if (!q || !o) return alert('Introduce una cantidad válida para swap.');
-    try {
-      await postTx('/api/transacciones/swap', {
-        portafolio_id: portafolioId,
-        tipo:          'swap_origen',
-        activo_id:     d,
-        cantidad:      q,
-        precio:        o / q,
-        ip_origen:     location.hostname
-      });
-      await postTx('/api/transacciones/swap', {
-        portafolio_id: portafolioId,
-        tipo:          'swap_destino',
-        activo_id:     a,
-        cantidad:      o,
-        precio:        1,
-        ip_origen:     location.hostname
-      });
-      alert('✅ Swap completado');
-      window.location.reload();
-    } catch (err) {
-      alert(err.message);
-    }
-  });
+// Submit swap CORREGIDO (main.html)
+fSw.addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const activo_origen_id = +sDe.value;
+  const activo_destino_id = +document.getElementById('swapA').value;
+  const cantidad_origen = parseFloat(cSw.value);
+  const cantidad_destino = parseFloat(vSw.value); // resultado ya calculado
+
+  if (!cantidad_origen || !cantidad_destino) 
+    return alert('Introduce una cantidad válida para swap.');
+
+  try {
+    await postTx('/api/transacciones/swap', {
+      portafolio_id: portafolioId,
+      activo_origen_id,
+      activo_destino_id,
+      cantidad: cantidad_origen,
+      precio: cantidad_destino / cantidad_origen,
+      ip_origen: location.hostname
+    });
+
+    alert('✅ Swap completado');
+    window.location.reload();
+  } catch (err) {
+    alert(err.message);
+  }
 });
+});
+
 </script>
 
  <script src="/client/js/alertas_btc.js"></script>
