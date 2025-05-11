@@ -189,6 +189,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const usuario       = JSON.parse(localStorage.getItem('usuario') || '{}');
   const portafolio_id = +localStorage.getItem('portafolioId');
 
+  // —————— CÁLCULO AUTOMÁTICO DEL VALOR UNITARIO ——————
+  const comprarValor = document.getElementById('comprarValorMain');
+
+  comprarCant.addEventListener('input', async () => {
+    const qty = parseFloat(comprarCant.value);
+    if (!qty) {
+      comprarValor.value = '';
+      return;
+    }
+    try {
+      const res = await fetch('/api/crypto/price');
+      if (!res.ok) throw new Error('No price');
+      const { precio } = await res.json();
+      comprarValor.value = precio.toFixed(2);
+    } catch (err) {
+      console.error('Error al obtener precio:', err);
+      comprarValor.value = '';
+    }
+  });
+  // ————————————————————————————————————————————————
 
   if (comprarForm) {
     comprarForm.addEventListener('submit', async e => {

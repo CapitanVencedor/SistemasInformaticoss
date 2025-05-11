@@ -88,23 +88,45 @@ app.get('/api/crypto/btc', async (req, res) => {
     res.status(500).json({ error: 'No se pudieron obtener datos de BTC' });
   }
 });
-// server/app.js (o donde tengas montadas las rutas)
+// En server/app.js, tras tus otros app.get(...)
+let precioCache = {
+  timestamp: 0,
+  precio: null
+};
+const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutos
+
 app.get('/api/crypto/price', async (req, res) => {
+  // Si el cache aún es válido, lo devolvemos
+  if (precioCache.precio !== null && (Date.now() - precioCache.timestamp) < CACHE_TTL_MS) {
+    return res.json({ precio: precioCache.precio });
+  }
+
   try {
-    // Llama al endpoint específico para EUR
+    // Consulta CoinGecko para obtener el precio de Bitcoin en EUR
     const { data } = await axios.get(
-      'https://api.coindesk.com/v1/bpi/currentprice/EUR.json'
+      'https://api.coingecko.com/api/v3/simple/price',
+      {
+        params: {
+          ids: 'bitcoin',
+          vs_currencies: 'eur'
+        }
+      }
     );
-    // Extrae solo el precio en euros
-    const precio = data.bpi.EUR.rate_float;
-    // Devuelve un objeto simple con el precio
+
+    const precio = data.bitcoin.eur;
+    // Actualiza cache
+    precioCache = {
+      timestamp: Date.now(),
+      precio
+    };
     return res.json({ precio });
+
   } catch (err) {
-    console.error('Error al obtener precio BTC:', err.message);
-    // En caso de fallo, devolvemos un 500 y un JSON con error
+    console.error('Error al obtener precio BTC desde CoinGecko:', err.message);
     return res.status(500).json({ error: 'No pude obtener el precio BTC' });
   }
 });
+
 
 // Front-end estático
 app.use('/client', express.static(path.join(__dirname, '../client/public')));

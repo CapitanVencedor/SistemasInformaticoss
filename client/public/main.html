@@ -22,7 +22,7 @@
     }
   </script>
 
-  <!-- Tus estilos en línea (opcionalmente los migras a style.css) -->
+  <!-- Tus estilos en línea -->
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -31,7 +31,6 @@
       color: #fff;
       line-height: 1.6;
     }
-    /* ... resto de tus estilos originales ... */
   </style>
 </head>
 <body>
@@ -48,22 +47,15 @@
     </nav>
   </header>
 
-  <!-- resto de tu contenido: hero, operaciones, features, gallery, foro, footer -->
-
-  <script src="/client/js/script.js"></script>
-</body>
-</html>
-
-
   <section class="hero">
     <h2>Invierte en Criptomonedas y Metales Preciosos</h2>
     <p>Bienvenido a la plataforma de compraventa de criptomonedas, oro y plata. Tecnología, seguridad y transparencia en tus inversiones.</p>
   </section>
-  
+
   <!-- NUEVA SECCIÓN DE OPERACIONES -->
   <section class="operaciones" style="padding: 3rem 2rem; text-align: center; background-color: #121a27;">
     <h2 style="margin-bottom: 1rem;">Opera con tus activos</h2>
-  
+
     <!-- Comprar -->
     <form id="formComprarMain" style="margin-bottom: 2rem;">
       <h3 style="color: gold;">Comprar</h3>
@@ -73,10 +65,10 @@
         <option value="3">Fiat</option>
       </select>
       <input type="number" id="comprarCantidadMain" step="any" placeholder="Cantidad" required />
-      <input type="number" id="comprarValorMain" step="any" placeholder="Valor unitario" required />
+      <input type="number" id="comprarValorMain" step="any" placeholder="Valor unitario" readonly />
       <button type="submit">Comprar</button>
     </form>
-  
+
     <!-- Vender -->
     <form id="formVenderMain" style="margin-bottom: 2rem;">
       <h3 style="color: gold;">Vender</h3>
@@ -89,7 +81,7 @@
       <input type="number" id="venderValorMain" step="any" placeholder="Valor unitario" required />
       <button type="submit">Vender</button>
     </form>
-  
+
     <!-- Swap -->
     <form id="formSwapMain">
       <h3 style="color: gold;">Swap</h3>
@@ -130,25 +122,23 @@
     <h2>Galería de Activos</h2>
     <div class="gallery-container">
       <div>
-        <a href="oro_chart.html">
-          <img src="img/oro.jpg" alt="Lingote de oro" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
+        <a href="/client/oro_chart.html">
+          <img src="/client/img/oro.jpg" alt="Lingote de oro" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />
         </a>
       </div>
       <div>
-        <a href="crypto_chart.html">
-          <img src="img/btc.png" alt="Bitcoin" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
+        <a href="/client/crypto_chart.html">
+          <img src="/client/img/btc.png" alt="Bitcoin" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />
         </a>
       </div>
       <div>
-        <img src="img/voxel.png" alt="Ethereum" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
+        <img src="/client/img/voxel.png" alt="Ethereum" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />
       </div>
       <div>
-        <img src="img/plata.png" alt="Lingotes de plata" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
+        <img src="/client/img/plata.png" alt="Lingotes de plata" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" />
       </div>
     </div>
   </section>
-  
-  
 
   <section class="forum-preview" id="foro">
     <h2>Últimos temas del foro</h2>
@@ -162,62 +152,90 @@
     </div>
     <div class="post">
       <h4>[Alerta] Estafas recientes en plataformas P2P</h4>
-      <p>Comunidad informa sobre sitios fraudulentos de compraventa. Comparte tu experiencia.</p>
+      <p>Compañera informa sobre sitios fraudulentos de compraventa. Comparte tu experiencia.</p>
     </div>
   </section>
 
   <footer>
     <p>&copy; 2025 Aurum Project - Cliente | Diseño moderno, seguridad real.</p>
   </footer>
-  <script src="js/alertas_btc.js"></script>
 
-</body>
-<script>
-  const portafolioId = 1; // Substitueix per l'ID real de l'usuari si es guarda en localStorage
+  <!-- Ajuste URL alertas_btc.js -->
+  <script src="/client/js/alertas_btc.js"></script>
 
-  async function enviarTransaccion(data, endpoint) {
-    const res = await fetch(`/transacciones/${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+  <!-- SCRIPT DE COMPRA CORREGIDO -->
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1) Obtén usuario y portafolioId
+      const rawUser = localStorage.getItem('usuario');
+      console.log('DEBUG localStorage usuario:', rawUser);
+      const user = rawUser ? JSON.parse(rawUser) : null;
+      let portafolioId = user ? user.portafolioId : null;
+
+      //  Si no existe en user, obtenlo vía API
+      if (!portafolioId && user) {
+        try {
+          const res = await fetch('/api/portafolios');
+          const lista = await res.json();
+          const miPort = lista.find(p => p.usuario_id === user.id);
+          portafolioId = miPort ? miPort.id : null;
+          console.log('DEBUG portafolioId from API:', portafolioId);
+        } catch (e) {
+          console.error('Error fetching portafolios:', e);
+        }
+      }
+
+      if (!portafolioId) {
+        alert('No se ha detectado tu portafolio. Por favor vuelve a iniciar sesión.');
+        return window.location.href = '/';
+      }
+
+      // 2) Referencias DOM
+      const selectComprar  = document.getElementById('comprarActivoMain');
+      const inputCantidad  = document.getElementById('comprarCantidadMain');
+      const inputValor     = document.getElementById('comprarValorMain');
+      const formComprar    = document.getElementById('formComprarMain');
+
+      // 3) Calcular valor unitario al vuelo
+      inputCantidad.addEventListener('input', async () => {
+        const qty = parseFloat(inputCantidad.value);
+        if (!qty) { inputValor.value = ''; return; }
+        try {
+          const res = await fetch('/api/crypto/price');
+          if (!res.ok) throw new Error('No hay precio');
+          const { precio } = await res.json();
+          inputValor.value = precio.toFixed(2);
+        } catch (err) {
+          console.error('Error al obtener precio:', err);
+          inputValor.value = '';
+        }
+      });
+
+      // 4) Enviar compra
+      formComprar.addEventListener('submit', async e => {
+        e.preventDefault();
+        const activo_id = +selectComprar.value;
+        const cantidad  = +inputCantidad.value;
+        try {
+          const resPrice = await fetch('/api/crypto/price');
+          if (!resPrice.ok) throw new Error('No hay precio');
+          const { precio } = await resPrice.json();
+
+          const resTx = await fetch('/api/transacciones/comprar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ portafolio_id: portafolioId, activo_id, cantidad, precio, ip_origen: location.hostname })
+          });
+          const body = await resTx.json();
+          if (!resTx.ok) throw new Error(body.error || 'Error en la compra');
+          alert('Compra realizada con éxito');
+          window.location.reload();
+        } catch (err) {
+          console.error('❌ Error en la compra:', err);
+          alert('No se pudo completar la compra: ' + err.message);
+        }
+      });
     });
-    if (res.ok) alert(`Transacción ${endpoint} completada`);
-    else alert(`Error al realizar ${endpoint}`);
-  }
-
-  document.getElementById('formComprarMain').addEventListener('submit', e => {
-    e.preventDefault();
-    enviarTransaccion({
-      portafolio_id: portafolioId,
-      activo_id: +document.getElementById('comprarActivoMain').value,
-      cantidad: +document.getElementById('comprarCantidadMain').value,
-      valor_unitario: +document.getElementById('comprarValorMain').value,
-      ip_origen: location.hostname
-    }, 'comprar');
-  });
-
-  document.getElementById('formVenderMain').addEventListener('submit', e => {
-    e.preventDefault();
-    enviarTransaccion({
-      portafolio_id: portafolioId,
-      activo_id: +document.getElementById('venderActivoMain').value,
-      cantidad: +document.getElementById('venderCantidadMain').value,
-      valor_unitario: +document.getElementById('venderValorMain').value,
-      ip_origen: location.hostname
-    }, 'vender');
-  });
-
-  document.getElementById('formSwapMain').addEventListener('submit', e => {
-    e.preventDefault();
-    enviarTransaccion({
-      portafolio_id: portafolioId,
-      activo_origen_id: +document.getElementById('swapDe').value,
-      activo_destino_id: +document.getElementById('swapA').value,
-      cantidad: +document.getElementById('swapCantidad').value,
-      valor_unitario: +document.getElementById('swapValor').value,
-      ip_origen: location.hostname
-    }, 'swap');
-  });
-</script>
-
+  </script>
+</body>
 </html>

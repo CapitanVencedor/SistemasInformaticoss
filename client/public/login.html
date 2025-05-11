@@ -17,23 +17,58 @@
       text-decoration: none;
       text-align: center;
     }
-
     .btn-registro:hover {
       background-color: #e0a800;
     }
-
     .registro-container {
       text-align: center;
       margin-top: 15px;
+    }
+    .login-container {
+      max-width: 400px;
+      margin: 5rem auto;
+      padding: 2rem;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    .input-group {
+      margin-bottom: 1rem;
+    }
+    .input-group label {
+      display: block;
+      margin-bottom: .5rem;
+      color: #ffc107;
+    }
+    .input-group input {
+      width: 100%;
+      padding: .5rem;
+      border: 1px solid #444;
+      border-radius: 4px;
+      background: #1e2a44;
+      color: #fff;
+    }
+    button[type="submit"] {
+      width: 100%;
+      padding: .75rem;
+      background: #ffc107;
+      border: none;
+      color: #000;
+      font-size: 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button[type="submit"]:hover {
+      background: #e0a800;
     }
   </style>
 </head>
 <body>
   <div class="login-container">
-    <h2>Bienvenido a Aurum</h2>
+    <h2 style="text-align: center; color: #ffc107;">Bienvenido a Aurum</h2>
     <form id="loginForm">
       <div class="input-group">
-        <label for="username">Usuario</label>
+        <label for="username">Usuario (email)</label>
         <input type="text" id="username" name="username" placeholder="Ingresa tu usuario" required>
       </div>
       <div class="input-group">
@@ -48,6 +83,45 @@
     </div>
   </div>
 
-  <script src="/client/js/script.js"></script>
+  <script>
+    const loginForm = document.getElementById('loginForm');
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email    = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/api/usuarios/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || 'Usuario o contraseña incorrectos');
+          return;
+        }
+
+        // ✅ Login correcto: guardamos en localStorage
+        localStorage.setItem('sesionIniciada', 'true');
+        localStorage.setItem('usuario', JSON.stringify(data.user));
+        localStorage.setItem('rol', data.user.rol);
+        localStorage.setItem('portafolioId', data.user.portafolioId);
+
+        // Redirigimos según rol
+        if (data.user.rol === 'cliente') {
+          window.location.href = '/main.html';
+        } else {
+          window.location.href = '/gestor/dashboard.html';
+        }
+      } catch (err) {
+        console.error('Error en login:', err);
+        alert('Error al conectar con el servidor');
+      }
+    });
+  </script>
 </body>
 </html>
