@@ -1,3 +1,5 @@
+// gestor/public/js/script.js
+
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Script cargado');
 
@@ -15,26 +17,21 @@ document.addEventListener('DOMContentLoaded', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
-
         const data = await res.json();
-
         if (!res.ok) {
           alert(data.error || 'Usuario o contraseña incorrectos');
           return;
         }
-
         // ✅ Login correcto
         localStorage.setItem('sesionIniciada', 'true');
         localStorage.setItem('usuario', JSON.stringify(data.user));
-        localStorage.setItem('rol', data.user.rol); 
-        
-                // Redirige según rol
+        localStorage.setItem('rol', data.user.rol);
+        // Redirige según rol
         if (data.user.rol === 'admin' || data.user.rol === 'gestor') {
           window.location.href = '/gestor/dashboard.html';
         } else {
           window.location.href = '/main.html';
         }
-
       } catch (err) {
         console.error('Error en login:', err);
         alert('Error al conectar con el servidor');
@@ -70,21 +67,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const idField = document.getElementById('clienteId').value;
       const nombre  = document.getElementById('nombre').value.trim();
       const email   = document.getElementById('email').value.trim();
+      const url     = idField ? `/api/usuarios/${idField}` : '/api/usuarios';
+      const method  = idField ? 'PUT' : 'POST';
 
-      if (idField) {
-        await fetch(`/api/usuarios/${idField}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nombre, email, estado: 1 })
-        });
-      } else {
-        await fetch('/api/usuarios', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nombre, email })
-        });
-      }
-
+      await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, email, estado: 1 })
+      });
       await loadClientes();
       clienteForm.reset();
       closeModal(modalCliente);
@@ -134,7 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnAgregarActivo) {
     btnAgregarActivo.addEventListener('click', () => openModal(modalActivo));
   }
-
   if (activoForm) {
     activoForm.addEventListener('submit', ev => {
       ev.preventDefault();
@@ -142,7 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const tipoActivo = document.getElementById('tipoActivo').value;
       const cantidad   = document.getElementById('cantidad').value;
       const precio     = document.getElementById('precio').value;
-
       if (idField) {
         const idx = activos.findIndex(a => a.id == idField);
         if (idx > -1) activos[idx] = { id: +idField, tipoActivo, cantidad, precio };
@@ -150,14 +138,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const newId = activos.length ? activos[activos.length - 1].id + 1 : 1;
         activos.push({ id: newId, tipoActivo, cantidad, precio });
       }
-
       localStorage.setItem('aurum_activos', JSON.stringify(activos));
       refreshActivoTable();
       activoForm.reset();
       closeModal(modalActivo);
     });
   }
-
   window.editActivo = id => {
     const a = activos.find(x => x.id == id);
     if (!a) return;
@@ -167,14 +153,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('precio').value      = a.precio;
     openModal(modalActivo);
   };
-
   window.deleteActivo = id => {
     if (!confirm(`¿Eliminar activo #${id}?`)) return;
     activos = activos.filter(a => a.id != id);
     localStorage.setItem('aurum_activos', JSON.stringify(activos));
     refreshActivoTable();
   };
-
   function refreshActivoTable() {
     if (!activoTable) return;
     activoTable.innerHTML = '';
@@ -194,6 +178,49 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   refreshActivoTable();
+
+  // —— AÑADIDO: LÓGICA DE COMPRA EN CLIENT —————————
+  const comprarForm   = document.getElementById('formComprarMain');
+  const comprarSelect = document.getElementById('comprarActivoMain');
+  const comprarCant   = document.getElementById('comprarCantidadMain');
+  // Se asume que guardaste el portafolio tras el login
+  const usuario       = JSON.parse(localStorage.getItem('usuario') || '{}');
+  const portafolio_id = usuario.portafolioId || 1;
+
+  if (comprarForm) {
+    comprarForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const activo_id = +comprarSelect.value;
+      const cantidad  = +comprarCant.value;
+      const ip_origen = location.hostname;
+
+      try {
+        // 1) Pido precio actual
+        const resPrice = await fetch('/api/crypto/price');
+        if (!resPrice.ok) throw new Error('No hay precio disponible');
+        const { precio } = await resPrice.json();
+
+        // 2) Registro la compra
+        const resTx = await fetch('/api/transacciones/comprar', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ portafolio_id, activo_id, cantidad, precio, ip_origen })
+        });
+        const body = await resTx.json();
+        if (!resTx.ok) throw new Error(body.error || 'Error al comprar');
+
+        alert('Compra registrada correctamente');
+
+        // 3) Refresca datos
+        if (typeof loadPortafolios === 'function') await loadPortafolios();
+        if (typeof loadClientes   === 'function') await loadClientes();
+
+      } catch (err) {
+        console.error('❌ Error al comprar:', err);
+        alert('No se pudo completar la compra');
+      }
+    });
+  }
 
   // ——— MODALES ——————————————————————————————
   function openModal(m)  { m.style.display = 'flex'; }

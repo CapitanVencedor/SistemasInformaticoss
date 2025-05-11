@@ -57,11 +57,13 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos requeridos' });
   }
   try {
+    // Insertamos con nombre y saldo inicial a 0
     const [result] = await pool.query(
-      'INSERT INTO portafolios (usuario_id, nombre) VALUES (?, ?)',
+      'INSERT INTO portafolios (usuario_id, nombre, saldo_total) VALUES (?, ?, 0)',
       [usuario_id, nombre_portafolio]
     );
-    // Recuperar fila recién creada con los campos completos
+
+    // Recuperamos inmediatamente la fila completa
     const [newRow] = await pool.query(`
       SELECT
         p.id,
@@ -74,6 +76,7 @@ router.post('/', async (req, res) => {
       JOIN usuarios u ON p.usuario_id = u.id
       WHERE p.id = ?
     `, [result.insertId]);
+
     res.status(201).json(newRow[0]);
   } catch (err) {
     console.error("Error al crear portafolio:", err);
@@ -81,19 +84,25 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 4) Editar portafolio
+// 4) Editar portafolio (nombre y saldo)
 router.put('/:id', async (req, res) => {
-  const { id } = req.params;
-  const { nombre_portafolio } = req.body;
+  const { id }                       = req.params;
+  const { nombre_portafolio, saldo_total } = req.body;
+
+  if (!nombre_portafolio || saldo_total == null) {
+    return res.status(400).json({ error: 'Faltan campos requeridos' });
+  }
+
   try {
     const [result] = await pool.query(
-      'UPDATE portafolios SET nombre = ? WHERE id = ?',
-      [nombre_portafolio, id]
+      'UPDATE portafolios SET nombre = ?, saldo_total = ? WHERE id = ?',
+      [nombre_portafolio, saldo_total, id]
     );
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Portafolio no encontrado' });
     }
-    // Recuperar datos actualizados
+
+    // Recuperamos la fila actualizada
     const [updated] = await pool.query(`
       SELECT
         p.id,
@@ -106,6 +115,7 @@ router.put('/:id', async (req, res) => {
       JOIN usuarios u ON p.usuario_id = u.id
       WHERE p.id = ?
     `, [id]);
+
     res.json(updated[0]);
   } catch (err) {
     console.error("Error al editar portafolio:", err);

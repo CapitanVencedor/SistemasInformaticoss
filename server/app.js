@@ -88,19 +88,24 @@ app.get('/api/crypto/btc', async (req, res) => {
     res.status(500).json({ error: 'No se pudieron obtener datos de BTC' });
   }
 });
+// server/app.js (o donde tengas montadas las rutas)
 app.get('/api/crypto/price', async (req, res) => {
   try {
+    // Llama al endpoint específico para EUR
     const { data } = await axios.get(
-      'https://api.coindesk.com/v1/bpi/currentprice.json'
+      'https://api.coindesk.com/v1/bpi/currentprice/EUR.json'
     );
-    // Devuelve el JSON bruto de Coindesk
-    return res.json(data);
+    // Extrae solo el precio en euros
+    const precio = data.bpi.EUR.rate_float;
+    // Devuelve un objeto simple con el precio
+    return res.json({ precio });
   } catch (err) {
-    console.error('Error Coindesk:', err.message);
-    // Manda un 500 con un JSON de error que luego reconozca el front
+    console.error('Error al obtener precio BTC:', err.message);
+    // En caso de fallo, devolvemos un 500 y un JSON con error
     return res.status(500).json({ error: 'No pude obtener el precio BTC' });
   }
 });
+
 // Front-end estático
 app.use('/client', express.static(path.join(__dirname, '../client/public')));
 app.use('/gestor', express.static(path.join(__dirname, '../gestor/public')));

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Detalle de Portafolio</title>
+  <link rel="stylesheet" href="/gestor/css/style.css">
+</head>
+<body>
+
+  <nav style="padding:1rem; background:#0e1726;">
+    <a href="/gestor/dashboard.html" style="color:#fff; text-decoration:none;">
+      ← Volver al Dashboard
+    </a>
+  </nav>
+
+  <main style="padding:2rem; color:#fff; font-family:Inter,sans-serif;">
+    <h1>Detalle de Portafolio</h1>
+
+    <form id="portafolioForm" style="margin:1rem 0; display:grid; gap:.5rem; max-width:600px;">
+      <label for="nombre_portafolio">Nombre:</label>
+      <input type="text" id="nombre_portafolio" required />
+
+      <label for="saldo_total">Saldo Total (€):</label>
+      <input type="number" step="any" id="saldo_total" required />
+
+      <div style="display:flex; gap:.5rem;">
+        <button type="submit" class="btn">Guardar Cambios</button>
+        <button type="button" id="btnEliminar" class="btn btn-danger">Eliminar Portafolio</button>
+      </div>
+    </form>
+
+    <section>
+      <h2>Transacciones</h2>
+      <button id="btnAgregarTrans" class="btn" style="margin-bottom:1rem;">Agregar Transacción</button>
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th><th>Activo</th><th>Tipo</th><th>Cantidad</th>
+            <th>Valor Unitario</th><th>Fecha</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="transTable"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- Modal Transacción -->
+  <div id="modalTrans" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="modalTransTitle">Transacción</h2>
+      <form id="transForm" style="display:grid; gap:.5rem; max-width:400px;">
+        <input type="hidden" id="transId" />
+
+        <label for="activo_trans">Activo:</label>
+        <select id="activo_trans" required></select>
+
+        <label for="tipo_trans">Tipo:</label>
+        <select id="tipo_trans" required>
+          <option value="COMPRA">COMPRA</option>
+          <option value="VENTA">VENTA</option>
+          <option value="SWAP">SWAP</option>
+        </select>
+
+        <label for="cantidad_trans">Cantidad:</label>
+        <input type="number" step="any" id="cantidad_trans" required />
+
+        <label for="valor_trans">Valor Unitario:</label>
+        <input type="number" step="any" id="valor_trans" required />
+
+        <button type="submit" class="btn">Guardar</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/gestor/js/vista_portafolio.js"></script>
+</body>
+</html>

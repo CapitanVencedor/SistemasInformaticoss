@@ -1,3 +1,5 @@
+// gestor/public/js/script.js
+
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Script GESTOR cargado');
 
@@ -18,11 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // — toggles de sección —————————————————————————
   function showClientes() {
-    secClientes .style.display = 'block';
+    secClientes.style.display    = 'block';
     secPortafolios.style.display = 'none';
   }
   function showPortafolios() {
-    secClientes .style.display = 'none';
+    secClientes.style.display    = 'none';
     secPortafolios.style.display = 'block';
   }
 
@@ -51,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/usuarios');
       clientes  = await res.json();
-      console.log('Clientes:', clientes);
     } catch (err) {
       console.error('Error cargando clientes:', err);
       clientes = [];
@@ -69,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${c.email}</td>
         <td>
           <button class="btn" onclick="viewPortfolio(${c.id})">
-            Ver Portafolio
+            Ver Portafolios
           </button>
           <button class="btn" onclick="editCliente(${c.id})">
             Editar
@@ -77,8 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="btn btn-danger" onclick="deleteCliente(${c.id})">
             Eliminar
           </button>
-        </td>
-      `;
+        </td>`;
       clienteTable.appendChild(tr);
     });
   }
@@ -97,10 +97,10 @@ document.addEventListener('DOMContentLoaded', () => {
         headers: {'Content-Type': 'application/json'},
         body:    JSON.stringify({ nombre, email, estado: 1 })
       });
-      await loadClientes();
-      await loadPortafolios();
       formCliente.reset();
       closeModal();
+      await loadClientes();
+      await loadPortafolios();
     } catch (err) {
       console.error('Error guardando cliente:', err);
     }
@@ -125,10 +125,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // muestra todos o sólo los del cliente
   window.viewPortfolio = clienteId => {
     showPortafolios();
-    // opcional: filtrar portafolios por clienteId
     renderPortafolios(clienteId);
+  };
+
+  // redirige al detalle concreto
+  window.viewPortfolioDetail = portafolioId => {
+    window.location.href = 
+      `/gestor/vista_portafolio.html?portafolio_id=${portafolioId}`;
   };
 
   // — Fetch y render de PORTAFOLIOS —————————————————
@@ -136,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/portafolios');
       portafolios = await res.json();
-      console.log('Portafolios:', portafolios);
     } catch (err) {
       console.error('Error cargando portafolios:', err);
       portafolios = [];
@@ -144,24 +149,19 @@ document.addEventListener('DOMContentLoaded', () => {
     renderPortafolios();
   }
 
-  /**
-   * Renderiza TODOS los portafolios, o solo los de un cliente:
-   * Si clienteId es pasado, filtra; si no, muestra todo.
-   */
   function renderPortafolios(clienteId = null) {
     portafolioTable.innerHTML = '';
-
     const lista = clienteId
       ? portafolios.filter(p => p.usuario_id == clienteId)
       : portafolios;
 
     if (lista.length === 0) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td colspan="5" style="text-align:center; padding:1rem;">
-          No hay portafolios ${clienteId ? 'para este cliente' : 'registrados'}.
-        </td>`;
-      portafolioTable.appendChild(tr);
+      portafolioTable.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align:center; padding:1rem;">
+            No hay portafolios ${clienteId ? 'para este cliente' : 'registrados'}.
+          </td>
+        </tr>`;
       return;
     }
 
@@ -171,14 +171,14 @@ document.addEventListener('DOMContentLoaded', () => {
       tr.innerHTML = `
         <td>${p.id}</td>
         <td>${cliente ? cliente.nombre : '—'}</td>
-        <td>${p.nombre}</td>
+        <td>${p.nombre_portafolio}</td>
         <td>${parseFloat(p.saldo_total).toFixed(2)}</td>
         <td>
-          <button class="btn" onclick="viewPortfolio(${p.usuario_id})">
+          <button class="btn"
+            onclick="viewPortfolioDetail(${p.id})">
             Ver Detalle
           </button>
-        </td>
-      `;
+        </td>`;
       portafolioTable.appendChild(tr);
     });
   }
