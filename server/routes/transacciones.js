@@ -124,16 +124,12 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-
-// --- RUTAS ESPECIALES PARA COMPRAR, VENDER Y SWAP ---
-
-// --- 6) COMPRAR activo ---
+// 6) COMPRAR activo
 router.post('/comprar', async (req, res) => {
   const { portafolio_id, activo_id, cantidad, precio, ip_origen } = req.body;
   const tipo = 'compra';
 
   try {
-    // 1. Registro de la transacción
     await pool.query(
       `INSERT INTO transacciones
          (portafolio_id, activo_id, tipo, cantidad, precio, ip_origen, fecha)
@@ -141,7 +137,6 @@ router.post('/comprar', async (req, res) => {
       [portafolio_id, activo_id, tipo, cantidad, precio, ip_origen]
     );
 
-    // 2. Upsert en portafolios_activos
     await pool.query(
       `INSERT INTO portafolios_activos (portafolio_id, activo_id, cantidad)
        VALUES (?, ?, ?)
@@ -149,7 +144,6 @@ router.post('/comprar', async (req, res) => {
       [portafolio_id, activo_id, cantidad]
     );
 
-    // 3. Devolver éxito
     return res.json({ success: true, mensaje: 'Compra registrada correctamente' });
   } catch (err) {
     console.error("Error en la compra:", err);
@@ -163,18 +157,14 @@ router.post('/vender', async (req, res) => {
   const tipo = 'venta';
 
   try {
-    // 1. Verificar cantidad suficiente
     const [rows] = await pool.query(
-      `SELECT cantidad
-         FROM portafolios_activos
-        WHERE portafolio_id = ? AND activo_id = ?`,
+      `SELECT cantidad FROM portafolios_activos WHERE portafolio_id = ? AND activo_id = ?`,
       [portafolio_id, activo_id]
     );
     if (!rows.length || rows[0].cantidad < cantidad) {
       return res.status(400).json({ error: 'Cantidad insuficiente para vender' });
     }
 
-    // 2. Registro de la transacción
     await pool.query(
       `INSERT INTO transacciones
          (portafolio_id, activo_id, tipo, cantidad, precio, ip_origen, fecha)
@@ -182,7 +172,6 @@ router.post('/vender', async (req, res) => {
       [portafolio_id, activo_id, tipo, cantidad, precio, ip_origen]
     );
 
-    // 3. Ajuste de saldo (resta)
     await pool.query(`
       UPDATE portafolios_activos
          SET cantidad = cantidad - ?
@@ -208,18 +197,14 @@ router.post('/swap', async (req, res) => {
   } = req.body;
 
   try {
-    // 1. Comprobar disponibilidad
     const [rows] = await pool.query(
-      `SELECT cantidad
-         FROM portafolios_activos
-        WHERE portafolio_id = ? AND activo_id = ?`,
+      `SELECT cantidad FROM portafolios_activos WHERE portafolio_id = ? AND activo_id = ?`,
       [portafolio_id, activo_origen_id]
     );
     if (!rows.length || rows[0].cantidad < cantidad) {
       return res.status(400).json({ error: 'Cantidad insuficiente para swap' });
     }
 
-    // 2. Transacción origen
     await pool.query(
       `INSERT INTO transacciones
          (portafolio_id, activo_id, tipo, cantidad, precio, ip_origen, fecha)
@@ -227,7 +212,6 @@ router.post('/swap', async (req, res) => {
       [portafolio_id, activo_origen_id, cantidad, precio, ip_origen]
     );
 
-    // 3. Transacción destino
     await pool.query(
       `INSERT INTO transacciones
          (portafolio_id, activo_id, tipo, cantidad, precio, ip_origen, fecha)
@@ -235,14 +219,12 @@ router.post('/swap', async (req, res) => {
       [portafolio_id, activo_destino_id, cantidad, precio, ip_origen]
     );
 
-    // 4. Ajuste de origen
     await pool.query(`
       UPDATE portafolios_activos
          SET cantidad = cantidad - ?
        WHERE portafolio_id = ? AND activo_id = ?
     `, [cantidad, portafolio_id, activo_origen_id]);
 
-    // 5. Ajuste de destino
     await pool.query(`
       INSERT INTO portafolios_activos (portafolio_id, activo_id, cantidad)
       VALUES (?, ?, ?)
@@ -253,6 +235,22 @@ router.post('/swap', async (req, res) => {
   } catch (err) {
     console.error("Error en el swap:", err);
     res.status(500).json({ error: 'Error al realizar el swap' });
+  }
+});
+
+// 9) Obtener historial por portafolio_id (CORREGIDO)
+router.get('/historial/:portafolioId', async (req, res) => {
+  const portafolioId = req.params.portafolioId;
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT tipo, cantidad, precio AS valor_unitario, activo_id, fecha AS timestamp FROM transacciones WHERE portafolio_id = ? ORDER BY fecha DESC',
+      [portafolioId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('❌ Error al obtener historial:', err);
+    res.status(500).json({ error: 'Error del servidor al obtener historial' });
   }
 });
 

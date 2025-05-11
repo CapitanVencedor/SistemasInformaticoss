@@ -132,10 +132,10 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // redirige al detalle concreto
-  window.viewPortfolioDetail = portafolioId => {
-    window.location.href = 
-      `/gestor/vista_portafolio.html?portafolio_id=${portafolioId}`;
-  };
+window.viewPortfolioDetail = portafolioId => {
+  window.location.href = 
+    `/gestor/vista_portafolio.html?id=${portafolioId}`;
+};
 
   // — Fetch y render de PORTAFOLIOS —————————————————
   async function loadPortafolios() {
@@ -190,3 +190,55 @@ document.addEventListener('DOMContentLoaded', () => {
     showClientes();
   })();
 });
+
+// funcion para cargar el historial
+async function cargarHistorial(portafolioId) {
+  try {
+    const res = await fetch(`/api/transacciones/historial/${portafolioId}`);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+    const historial = await res.json();
+
+    const tablaHistorial = document.getElementById('tablaHistorial');
+    tablaHistorial.innerHTML = historial.map(tx => `
+      <tr>
+        <td>${tx.tipo}</td>
+        <td>${tx.activo_id === 1 ? 'Bitcoin' : tx.activo_id === 2 ? 'Oro' : 'Fiat'}</td>
+        <td>${tx.cantidad}</td>
+        <td>${parseFloat(tx.valor_unitario).toFixed(2)} €</td>
+        <td>${new Date(tx.timestamp).toLocaleString()}</td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    console.error('Error al cargar historial:', err);
+    alert('No se pudo cargar el historial.');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const portafolioId = urlParams.get('id');
+
+  if (portafolioId) {
+    cargarHistorial(portafolioId);
+  }
+});
+
+function refreshClienteTable() {
+  if (!clienteTable) return;
+  clienteTable.innerHTML = '';
+  clientes.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-portafolio-id', c.portafolioId); // añade esta línea
+    tr.innerHTML = `
+      <td>${c.id}</td>
+      <td>${c.nombre}</td>
+      <td>${c.email}</td>
+      <td>
+        <button onclick="editCliente(${c.id})">Editar</button>
+        <button onclick="deleteCliente(${c.id})">Eliminar</button>
+      </td>
+    `;
+    clienteTable.appendChild(tr);
+  });
+}

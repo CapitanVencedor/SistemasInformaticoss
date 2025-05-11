@@ -98,23 +98,34 @@ document.addEventListener('DOMContentLoaded', () => {
     await loadClientes();
   };
 
-  function refreshClienteTable() {
-    if (!clienteTable) return;
-    clienteTable.innerHTML = '';
-    clientes.forEach(c => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${c.id}</td>
-        <td>${c.nombre}</td>
-        <td>${c.email}</td>
-        <td>
-          <button onclick="editCliente(${c.id})">Editar</button>
-          <button onclick="deleteCliente(${c.id})">Eliminar</button>
-        </td>
-      `;
-      clienteTable.appendChild(tr);
-    });
-  }
+ function refreshClienteTable() {
+  if (!clienteTable) return;
+  clienteTable.innerHTML = '';
+  clientes.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-portafolio-id', c.portafolioId);
+    tr.innerHTML = `
+      <td>${c.id}</td>
+      <td>${c.nombre}</td>
+      <td>${c.email}</td>
+      <td>
+        <button onclick="editCliente(${c.id})">Editar</button>
+        <button onclick="deleteCliente(${c.id})">Eliminar</button>
+      </td>
+    `;
+    clienteTable.appendChild(tr);
+  });
+
+  clienteTable.addEventListener('click', (e) => {
+    const fila = e.target.closest('tr');
+    if (!fila) return;
+
+    const portafolioId = fila.dataset.portafolioId;
+    if (portafolioId) {
+      cargarHistorial(portafolioId);
+    }
+  });
+}
 
   // ——— CRUD ACTIVOS (CLIENTE) ——————————————————————
   const btnAgregarActivo = document.getElementById('btnAgregarActivo');
@@ -287,4 +298,35 @@ async function calcularPrecioVenta() {
     venderValor.value = '';
   }
 }
+
+async function cargarHistorial(portafolioId) {
+  try {
+    const res = await fetch(`/api/transacciones/historial/${portafolioId}`);
+    const historial = await res.json();
+
+    const tablaHistorial = document.getElementById('tablaHistorial');
+    tablaHistorial.innerHTML = historial.map(transaccion => `
+      <tr>
+        <td>${transaccion.tipo}</td>
+        <td>${transaccion.cantidad}</td>
+        <td>${transaccion.valor_unitario.toFixed(2)} €</td>
+        <td>${transaccion.activo_id === 1 ? 'Bitcoin' : transaccion.activo_id === 2 ? 'Oro' : 'Fiat'}</td>
+        <td>${new Date(transaccion.timestamp).toLocaleString()}</td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    console.error('Error al cargar historial:', err);
+    alert('No se pudo cargar el historial de transacciones.');
+  }
+}
+
+document.getElementById('clienteTable').addEventListener('click', (e) => {
+  const fila = e.target.closest('tr');
+  if (!fila) return;
+
+  const portafolioId = fila.dataset.portafolioId;
+  if (portafolioId) {
+    cargarHistorial(portafolioId);
+  }
+});
 
