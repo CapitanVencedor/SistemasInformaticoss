@@ -26,7 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('sesionIniciada', 'true');
         localStorage.setItem('usuario', JSON.stringify(data.user));
         localStorage.setItem('rol', data.user.rol);
-        // Redirige según rol
+
+        localStorage.setItem('portafolioId', data.user.portafolioId);
+                // Redirige según rol
         if (data.user.rol === 'admin' || data.user.rol === 'gestor') {
           window.location.href = '/gestor/dashboard.html';
         } else {
@@ -185,7 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const comprarCant   = document.getElementById('comprarCantidadMain');
   // Se asume que guardaste el portafolio tras el login
   const usuario       = JSON.parse(localStorage.getItem('usuario') || '{}');
-  const portafolio_id = usuario.portafolioId || 1;
+  const portafolio_id = +localStorage.getItem('portafolioId');
+
 
   if (comprarForm) {
     comprarForm.addEventListener('submit', async e => {
