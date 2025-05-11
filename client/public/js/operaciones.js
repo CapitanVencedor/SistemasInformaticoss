@@ -2,19 +2,19 @@ const API_BASE      = '/api/transacciones';
 const portafolio_id = +localStorage.getItem('portafolioId');
 const ip_origen     = location.hostname;
 const activos = {
-  bitcoin: 1,
-  oro:     2,
-  fiat:    3
+  1: 'bitcoin',
+  2: 'oro',
+  3: 'fiat'
 };
 
 /**
  * Registrar una transacción en el servidor.
  * @param {'compra'|'venta'|'swap_origen'|'swap_destino'} tipo 
- * @param {'bitcoin'|'oro'|'fiat'} activo 
+ * @param {number} activo_id 
  * @param {string|number} cantidad 
- * @param {string|number} precio 
+ * @param {string|number} precio_total 
  */
-async function registrarTransaccion(tipo, activo, cantidad, precio) {
+async function registrarTransaccion(tipo, activo_id, cantidad, precio_total) {
   const rutas = {
     compra:       'comprar',
     venta:        'vender',
@@ -27,9 +27,9 @@ async function registrarTransaccion(tipo, activo, cantidad, precio) {
   const url = `${API_BASE}/${ruta}`;
   const body = {
     portafolio_id,
-    activo_id:     activos[activo],
+    activo_id,
     cantidad:      parseFloat(cantidad),
-    valor_unitario: parseFloat(precio),
+    valor_unitario: parseFloat(precio_total) / parseFloat(cantidad),
     ip_origen
   };
 
@@ -38,6 +38,7 @@ async function registrarTransaccion(tipo, activo, cantidad, precio) {
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(body)
   });
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Error de red (${res.status}): ${text}`);
@@ -50,10 +51,9 @@ async function registrarTransaccion(tipo, activo, cantidad, precio) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // --- FORMULARIO de VENTA ---
   const formVender = document.getElementById('formVender');
-  if (!formVender) return console.error('⚠️ No existe ningún element con id="formVender"');
-  
+  if (!formVender) return;
+
   formVender.addEventListener('submit', async e => {
     e.preventDefault();
 
@@ -61,26 +61,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const cantidadInput = document.getElementById('cantidadVender');
     const valorInput    = document.getElementById('valorVender');
 
-    if (!activoInput || !cantidadInput || !valorInput) {
-      console.error('⚠️ Faltan inputs en el formulario de venta');
-      return alert('Error interno: falta un campo de venta');
-    }
-
-    const activo   = activoInput.value;
-    const cantidad = cantidadInput.value;
-    const precio   = valorInput.value;
-
-    console.log('💸 Intentando vender:', { activo, cantidad, precio });
+    const activo_id = +activoInput.value;
+    const cantidad  = cantidadInput.value;
+    const total     = valorInput.value;
 
     try {
-      // 1) Registro de la venta de cripto/oro
-      await registrarTransaccion('venta', activo, cantidad, precio);
+      await registrarTransaccion('venta', activo_id, cantidad, total);
 
-      // 2) Registro de la compra de FIAT con el total
-      const totalFiat = (parseFloat(cantidad) * parseFloat(precio)).toFixed(2);
-      await registrarTransaccion('compra', 'fiat', totalFiat, 1);
+      // Convertimos lo vendido a FIAT (solo si no es fiat el activo original)
+      if (activo_id !== 3) {
+        await registrarTransaccion('compra', 3, total, total);
+      }
 
-      alert('✅ Venta completada y saldo en FIAT actualizado');
+      alert('✅ Venta registrada y FIAT actualizado');
       if (typeof loadPortafolio === 'function') await loadPortafolio();
     } catch (err) {
       console.error(err);
