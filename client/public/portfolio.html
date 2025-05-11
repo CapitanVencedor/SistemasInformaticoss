@@ -4,21 +4,29 @@
   <meta charset="UTF-8">
   <title>Aurum Project - Portafolio</title>
   <link rel="stylesheet" href="/client/css/style.css">
-</head>
-<body>
 
-  <!-- Control de acceso: si no hay sesión iniciada, redirige al login -->
+  <!-- Control de acceso: sólo clientes -->
   <script>
-    if (localStorage.getItem('sesionIniciada') !== 'true') {
+    const sesion = localStorage.getItem('sesionIniciada');
+    const rol    = localStorage.getItem('rol');
+    if (sesion !== 'true' || rol !== 'cliente') {
+      // si no es cliente, lo expulsamos al login
       window.location.href = '/';
     }
+    // ocultar enlace de Gestor
+    document.addEventListener('DOMContentLoaded', () => {
+      const gestorLink = document.querySelector('nav a[href="/gestor/dashboard.html"]');
+      if (gestorLink) gestorLink.style.display = 'none';
+    });
   </script>
-
+</head>
+<body>
   <nav>
     <h1>Portafolio de Activos</h1>
     <ul>
-      <li><a href="main.html">Inicio</a></li>
-      <li><a href="/dashboard">Gestor</a></li>
+      <li><a href="/client/main.html">Inicio</a></li>
+      <!-- Corregido href a la ruta real de gestor -->
+      <li><a href="/gestor/dashboard.html">Gestor</a></li>
       <li><a href="/client/logout.html">Cerrar Sesión</a></li>
     </ul>
   </nav>
@@ -70,7 +78,6 @@
   </div>
 
   <script src="/client/js/script.js"></script>
-  <script src="/client/public/js/operaciones.js"></script>
-
+  <script src="/client/js/operaciones.js"></script>
 </body>
 </html>

@@ -7,12 +7,12 @@
 </head>
 <body>
 
-  <!-- Control de acceso: solo permite gestor o admin -->
+  <!-- Control de acceso: sólo gestores o admins -->
   <script>
     const sesion = localStorage.getItem('sesionIniciada');
-    const rol = localStorage.getItem('rol');
+    const rol    = localStorage.getItem('rol');
     if (sesion !== 'true' || (rol !== 'gestor' && rol !== 'admin')) {
-      alert('Acceso restringido. Solo para gestores o administradores.');
+      alert('Acceso restringido. Sólo para gestores o administradores.');
       window.location.href = '/';
     }
   </script>
@@ -20,32 +20,42 @@
   <nav>
     <h1>Aurum Gestor Dashboard</h1>
     <ul>
-      <li><a href="/dashboard">Gestión de Clientes</a></li>
-      <li><a href="/portfolio">Portafolios</a></li>
-      <li><a href="/client/main.html">Cliente</a></li>
+      <li><a href="#" id="linkClientes">Gestión de Clientes</a></li>
+      <li><a href="#" id="linkPortafolios">Portafolios</a></li>
       <li><a href="/gestor/logout.html">Cerrar Sesión</a></li>
     </ul>
   </nav>
 
   <main>
-    <section class="crud-section">
+    <!-- sección 1: crud clientes -->
+    <section id="seccionClientes" class="crud-section">
       <h2>Gestión de Clientes</h2>
-      <button id="btnAgregar" type="button">Agregar Nuevo Cliente</button>
+      <button id="btnAgregar">Agregar Nuevo Cliente</button>
       <table>
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Acciones</th>
+            <th>ID</th><th>Nombre</th><th>Email</th><th>Acciones</th>
           </tr>
         </thead>
         <tbody id="clienteTable"></tbody>
       </table>
     </section>
+
+    <!-- sección 2: listado portafolios -->
+    <section id="seccionPortafolios" class="crud-section" style="display:none;">
+      <h2>Resumen de Portafolios</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Cliente</th><th>Nombre Portafolio</th><th>Saldo Total</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="portafolioTable"></tbody>
+      </table>
+    </section>
   </main>
 
-  <!-- Modal para agregar/editar -->
+  <!-- Modal para agregar/editar cliente -->
   <div id="modalCliente" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
