@@ -202,16 +202,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Recalcula un campo total = unitario × cantidad
   async function recTotal(sel, inpQ, inpT) {
-    const q = parseFloat(inpQ.value);
+  const q = parseFloat(inpQ.value);
+  inpT.value = '';
+  console.log('👉 Cantidad:', q, 'Activo ID:', sel.value);
+  if (!q) return;
+  try {
+    const unit = await fetchPrecioUnitario(+sel.value);
+    console.log('💰 Precio unitario:', unit);
+    inpT.value = (unit * q).toFixed(2);
+  } catch (err) {
+    console.error('❌ Error al calcular total:', err);
     inpT.value = '';
-    if (!q) return;
-    try {
-      const unit = await fetchPrecioUnitario(+sel.value);
-      inpT.value = (unit * q).toFixed(2);
-    } catch {
-      inpT.value = '';
-    }
   }
+}
+
 
   // Eventos compra
   sComp.addEventListener('change', () => recTotal(sComp, cComp, vComp));

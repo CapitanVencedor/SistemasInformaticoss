@@ -27,6 +27,8 @@ app.use('/api/activos',       require('./routes/activos'));
 app.use('/api/alertas',       require('./routes/alertas'));
 app.use('/api/chartdata',     require('./routes/chartdata'));
 app.use('/api/ohlc',          require('./routes/ohlc_data'));
+app.use('/api/metals', require('./routes/metals'));
+
 
 // Caché en memoria para BTC histórico (10 min)
 let btcHistoryCache = { timestamp: 0, data: null };
@@ -73,6 +75,61 @@ app.get('/api/crypto/price', async (req, res) => {
     res.status(500).json({ error: 'No se pudo obtener el precio de BTC' });
   }
 });
+// Caché en memoria para precio oro (2 min)
+app.get('/api/crypto/gold', async (req, res) => {
+  if (goldPriceCache.precio !== null && (Date.now() - goldPriceCache.timestamp) < GOLD_PRICE_TTL) {
+    return res.json({ precio: goldPriceCache.precio });
+  }
+
+  try {
+    const { data } = await axios.get('https://api.metalpriceapi.com/v1/latest', {
+      params: {
+        api_key: 'beabd5fcbef2f00f93d11adf808172df',
+        base: 'XAU',
+        currencies: 'EUR'
+      }
+    });
+
+    const precio = data.rates.EUR;
+    goldPriceCache = { timestamp: Date.now(), precio };
+    res.json({ precio });
+  } catch (err) {
+    console.error('❌ Error precio del oro:', err.message);
+    res.status(500).json({ error: 'Error al obtener precio del oro' });
+  }
+});
+
+let goldPriceCache = { timestamp: 0, precio: null };
+const GOLD_PRICE_TTL = 2 * 60 * 1000;
+
+app.get('/api/crypto/gold', async (req, res) => {
+  if (goldPriceCache.precio !== null && (Date.now() - goldPriceCache.timestamp) < GOLD_PRICE_TTL) {
+    return res.json({ precio: goldPriceCache.precio });
+  }
+
+  try {
+    const { data } = await axios.get('https://api.metalpriceapi.com/v1/latest', {
+      params: {
+        api_key: 'beabd5fcbef2f00f93d11adf808172df',
+        base: 'XAU',
+        currencies: 'EUR'
+      }
+    });
+
+    const precio = data.rates.EUR;
+    goldPriceCache = {
+      timestamp: Date.now(),
+      precio
+    };
+
+    res.json({ precio });
+
+  } catch (err) {
+    console.error('❌ Error precio del oro:', err.message);
+    res.status(500).json({ error: 'Error al obtener precio del oro' });
+  }
+});
+
 
 // Servir front-end estático
 app.use('/client', express.static(path.join(__dirname, '../client/public')));

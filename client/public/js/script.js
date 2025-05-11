@@ -1,4 +1,4 @@
-// gestor/public/js/script.js
+// client/public/js/script.js
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Script cargado');
@@ -209,8 +209,15 @@ document.addEventListener('DOMContentLoaded', () => {
       comprarValor.value = '';
       return;
     }
+  
+    const activo_id = +comprarSelect.value;
+  
+    // 🟡 AÑADE ESTO para depurar:
+    console.log('Activo seleccionado:', activo_id);
+    console.log('Llamando a:', activo_id === 2 ? '/api/crypto/gold' : '/api/crypto/price');
+  
     try {
-      const res = await fetch('/api/crypto/price');
+      const res = await fetch(activo_id === 2 ? '/api/crypto/gold' : '/api/crypto/price');
       if (!res.ok) throw new Error('No price');
       const { precio } = await res.json();
       comprarValor.value = precio.toFixed(2);
@@ -219,7 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
       comprarValor.value = '';
     }
   });
-  // ————————————————————————————————————————————————
+    
+    // ————————————————————————————————————————————————
 
   if (comprarForm) {
     comprarForm.addEventListener('submit', async e => {
@@ -230,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         // 1) Pido precio actual
-        const resPrice = await fetch('/api/crypto/price');
+        const resPrice = await fetch(activo_id === 2 ? '/api/crypto/gold' : '/api/crypto/price');
         if (!resPrice.ok) throw new Error('No hay precio disponible');
         const { precio } = await resPrice.json();
 
@@ -283,21 +291,24 @@ venderCant.addEventListener('input',   calcularPrecioVenta);
 
 async function calcularPrecioVenta() {
   const qty = parseFloat(venderCant.value);
+  const activo_id = +venderSelect.value;
   if (!qty) {
     venderValor.value = '';
     return;
   }
   try {
-    const res = await fetch('/api/crypto/price');
+    const endpoint = activo_id === 2 ? '/api/crypto/gold' : '/api/crypto/price';
+    const res = await fetch(endpoint);
     if (!res.ok) throw new Error('No hay precio disponible');
-    const { precio } = await res.json();       // precio unitario
-    const total = precio * qty;                 // ahora sí multiplico por la cantidad
-    venderValor.value = total.toFixed(2);       // pongo el total
+    const { precio } = await res.json();
+    const total = precio * qty;
+    venderValor.value = total.toFixed(2);
   } catch (err) {
     console.error('Error al obtener precio de venta:', err);
     venderValor.value = '';
   }
 }
+
 
 async function cargarHistorial(portafolioId) {
   try {
