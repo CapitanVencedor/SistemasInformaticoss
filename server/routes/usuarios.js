@@ -2,7 +2,7 @@
 const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
-const bcrypt  = require('bcrypt');
+const bcrypt  = require('bcryptjs');   // ← Usamos bcryptjs en lugar de bcrypt
 
 // 1) Listar todos los clientes (rol = 'cliente')
 router.get('/', async (req, res) => {
@@ -39,7 +39,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 3) Crear nuevo cliente (con contraseña por defecto '1234', hasheada con bcrypt)
+// 3) Crear nuevo cliente (con contraseña por defecto '1234', hasheada con bcryptjs)
 router.post('/', async (req, res) => {
   const { nombre, email } = req.body;
   if (!nombre || !email) {
@@ -109,10 +109,7 @@ router.delete('/:id', async (req, res) => {
 
 // 6) Login de cliente/usuario
 router.post('/login', async (req, res) => {
-  console.log('>>> Login body:', req.body);
   const { email, password } = req.body;
-  console.log('>>> Parámetros recibidos →', { email, password });
-
   if (!email || !password) {
     return res.status(400).json({ error: 'Faltan email o password' });
   }
@@ -124,20 +121,14 @@ router.post('/login', async (req, res) => {
        WHERE email = ? AND estado = 1`,
       [email]
     );
-    console.log('>>> Filas devueltas por la consulta:', rows);
     if (rows.length === 0) {
       return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
     const user = rows[0];
-    console.log('>>> Hash almacenado en BD:', user.password);
-
-    // Comparamos con bcrypt
     const match = await bcrypt.compare(password, user.password);
-    console.log('>>> Resultado bcrypt.compare:', match);
     if (!match) {
       return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
-
     // No devolvemos el hash al cliente
     delete user.password;
     res.json({ user });
