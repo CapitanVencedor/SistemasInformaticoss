@@ -259,3 +259,32 @@ document.addEventListener('DOMContentLoaded', () => {
       closeModal(e.target);
   });
 });
+
+// —————— CÁLCULO AUTOMÁTICO DEL VALOR UNITARIO PARA VENTA ——————
+
+const venderSelect   = document.getElementById('venderActivoMain');
+const venderCant     = document.getElementById('venderCantidadMain');
+const venderValor    = document.getElementById('venderValorMain');
+
+// Cuando cambie el activo o la cantidad, recalculamos precio
+venderSelect.addEventListener('change', calcularPrecioVenta);
+venderCant.addEventListener('input',   calcularPrecioVenta);
+
+async function calcularPrecioVenta() {
+  const qty = parseFloat(venderCant.value);
+  if (!qty) {
+    venderValor.value = '';
+    return;
+  }
+  try {
+    const res = await fetch('/api/crypto/price');
+    if (!res.ok) throw new Error('No hay precio disponible');
+    const { precio } = await res.json();       // precio unitario
+    const total = precio * qty;                 // ahora sí multiplico por la cantidad
+    venderValor.value = total.toFixed(2);       // pongo el total
+  } catch (err) {
+    console.error('Error al obtener precio de venta:', err);
+    venderValor.value = '';
+  }
+}
+
