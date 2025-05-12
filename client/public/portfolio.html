@@ -19,6 +19,50 @@
       if (gestorLink) gestorLink.style.display = 'none';
     });
   </script>
+
+  <style>
+    /* Estilos para el botón y el formulario de renta */
+    #btnGenerarRenta {
+      margin: 1rem 0;
+      padding: 0.5rem 1rem;
+      background: #e67e22;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #btnGenerarRenta:hover { opacity: 0.9; }
+    #rentaFormContainer {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #f4f4f4;
+      border-radius: 6px;
+    }
+    #rentaForm .input-group {
+      margin-bottom: 0.75rem;
+    }
+    #rentaForm label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 0.25rem;
+    }
+    #rentaForm input {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #rentaForm button[type="submit"] {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      background: #27ae60;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #rentaForm button[type="submit"]:hover { opacity: 0.9; }
+  </style>
 </head>
 <body>
   <nav>
@@ -43,6 +87,10 @@
         </thead>
         <tbody id="activoTable"></tbody>
       </table>
+
+      <!-- Botón y contenedor para generar info de la renta -->
+      <button id="btnGenerarRenta">Generar Info Declaración de la Renta</button>
+      <div id="rentaFormContainer"></div>
     </section>
   </main>
 
@@ -96,43 +144,57 @@
     </div>
   </form>
 
-<!-- Script para cargar y pintar la tabla de activos -->
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const portafolioId = +localStorage.getItem('portafolioId') || 0;
-    if (!portafolioId) {
-      alert('No se detecta tu portafolio. Vuelve a iniciar sesión.');
-      return window.location.href = '/client/logout.html';
-    }
+  <!-- Script para cargar y pintar la tabla de activos -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const portafolioId = +localStorage.getItem('portafolioId') || 0;
+      if (!portafolioId) {
+        alert('No se detecta tu portafolio. Vuelve a iniciar sesión.');
+        return window.location.href = '/client/logout.html';
+      }
 
-    async function loadActivos() {
-      console.log('⏳ Cargando activos para portafolio', portafolioId);
-      const res = await fetch(`/api/portafolios/${portafolioId}/activos`);
-      console.log('🔙 Respuesta HTTP:', res.status);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const activos = await res.json();
+      async function loadActivos() {
+        console.log('⏳ Cargando activos para portafolio', portafolioId);
+        const res = await fetch(`/api/portafolios/${portafolioId}/activos`);
+        console.log('🔙 Respuesta HTTP:', res.status);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const activos = await res.json();
 
-      const tbody = document.getElementById('activoTable');
-      tbody.innerHTML = activos.map(a => {
-        // si tu API devuelve { nombre_activo, cantidad }:
-        const nombre = a.nombre_activo;
-        // si devuelve { activo, cantidad } usa: const nombre = a.activo;
-        return `
-          <tr>
-            <td>${nombre}</td>
-            <td>${parseFloat(a.cantidad).toFixed(8)}</td>
-          </tr>
-        `;
-      }).join('');
-    }
+        const tbody = document.getElementById('activoTable');
+        tbody.innerHTML = activos.map(a => {
+          const nombre = a.nombre_activo || a.activo;
+          return `<tr><td>${nombre}</td><td>${parseFloat(a.cantidad).toFixed(8)}</td></tr>`;
+        }).join('');
+      }
 
-    loadActivos().catch(err => {
-      console.error('Error cargando portafolio:', err);
-      alert('No se pudo cargar tu portafolio');
+      loadActivos().catch(err => {
+        console.error('Error cargando portafolio:', err);
+        alert('No se pudo cargar tu portafolio');
+      });
+
+      // Generar formulario de renta
+      document.getElementById('btnGenerarRenta').addEventListener('click', () => {
+        const rows = document.querySelectorAll('#activoTable tr');
+        let html = '<h3>Formulario Declaración de la Renta (Ficticio)</h3>';
+        html += '<form id="rentaForm">';
+        rows.forEach(row => {
+          const nombre = row.cells[0].textContent;
+          const cantidad = row.cells[1].textContent;
+          html += '<div class="input-group">';
+          html += `<label>${nombre} (Cantidad: ${cantidad})</label>`;
+          html += `<input type="number" name="${nombre}" value="${cantidad}" readonly />`;
+          html += '</div>';
+        });
+        html += '<button type="submit">Imprimir Formulario</button></form>';
+        document.getElementById('rentaFormContainer').innerHTML = html;
+
+        document.getElementById('rentaForm').addEventListener('submit', e => {
+          e.preventDefault();
+          window.print();
+        });
+      });
     });
-  });
-</script>
-
+  </script>
 
   <script src="/client/js/script.js"></script>
   <script src="/client/js/operaciones.js"></script>
