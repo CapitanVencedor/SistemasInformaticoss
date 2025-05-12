@@ -1,4 +1,3 @@
-// server/routes/usuarios.js
 const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
@@ -39,7 +38,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 3) Crear nuevo cliente (contraseña por defecto '1234')
+// 3) Crear nuevo cliente (pasword por defecto '1234')
 router.post('/', async (req, res) => {
   const { nombre, email } = req.body;
   if (!nombre || !email) {
@@ -65,28 +64,56 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 4) Editar cliente
+/*
+  4) Actualización parcial de cliente
+     - Si en el body viene `nombre`, actualiza nombre.
+     - Si viene `email`, actualiza email.
+     - Si viene `estado`, actualiza estado.
+*/
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { nombre, email, estado } = req.body;
+
+  const updates = [];
+  const params  = [];
+
+  if (nombre !== undefined) {
+    updates.push('nombre = ?');
+    params.push(nombre);
+  }
+  if (email !== undefined) {
+    updates.push('email = ?');
+    params.push(email);
+  }
+  if (estado !== undefined) {
+    updates.push('estado = ?');
+    params.push(estado);
+  }
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: 'No hay campos para actualizar' });
+  }
+
+  const sql = `
+    UPDATE usuarios
+       SET ${updates.join(', ')}
+     WHERE id = ? AND rol = 'cliente'
+  `;
+  params.push(id);
+
   try {
-    const [result] = await pool.query(
-      `UPDATE usuarios 
-          SET nombre = ?, email = ?, estado = ? 
-        WHERE id = ? AND rol = 'cliente'`,
-      [nombre, email, estado, id]
-    );
+    const [result] = await pool.query(sql, params);
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Cliente no encontrado o sin cambios' });
     }
     res.json({ success: true });
   } catch (err) {
-    console.error("Error al editar cliente:", err);
-    res.status(500).json({ error: 'Error al editar cliente' });
+    console.error("Error al actualizar cliente:", err);
+    res.status(500).json({ error: 'Error al actualizar cliente' });
   }
 });
 
-// 5) Eliminar cliente
+// 5) Eliminar físicamente un cliente (opcional, si aún lo necesitas)
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -105,15 +132,13 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// 6) Login de cliente/usuario
-// 6) Login de cliente/usuario
+// 6) Login de usuario
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Faltan email o password' });
   }
   try {
-    // 1) Traer usuario con hash
     const [rows] = await pool.query(
       `SELECT id, nombre, email, rol, estado, password
          FROM usuarios
@@ -124,21 +149,18 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
     const user = rows[0];
-
-    // 2) Comparar contraseña
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
 
-    // 3) Obtener o crear portafolio para este usuario
+    // Obtener o crear portafolio...
     const [pfRows] = await pool.query(
       `SELECT id FROM portafolios WHERE usuario_id = ?`,
       [user.id]
     );
     let portafolioId;
     if (pfRows.length === 0) {
-      // No existe → creamos uno nuevo con saldo 0
       const [insertResult] = await pool.query(
         `INSERT INTO portafolios (usuario_id, nombre, saldo_total)
          VALUES (?, ?, 0)`,
@@ -149,29 +171,22 @@ router.post('/login', async (req, res) => {
       portafolioId = pfRows[0].id;
     }
 
-    // 4) Limpiar el objeto user para devolver al front
     delete user.password;
     user.portafolioId = portafolioId;
-
-    // 5) Devolver el usuario + su portafolio
-    return res.json({ user });
+    res.json({ user });
   } catch (err) {
     console.error("Error en login:", err);
-    return res.status(500).json({ error: 'Error interno en login' });
+    res.status(500).json({ error: 'Error interno en login' });
   }
 });
 
-// 7) Registro desde formulario web
+// 7) Registro web
 router.post('/registro', async (req, res) => {
   const { nombre, email, password } = req.body;
-
-  // 1) Validar campos obligatorios
   if (!nombre || !email || !password) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
-
   try {
-    // 2) Verificar si el email ya existe
     const [existente] = await pool.query(
       'SELECT id FROM usuarios WHERE email = ?',
       [email]
@@ -179,23 +194,17 @@ router.post('/registro', async (req, res) => {
     if (existente.length > 0) {
       return res.status(409).json({ error: 'El correo ya está registrado' });
     }
-
-    // 3) Hashear la contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // 4) Insertar nuevo usuario con rol 'cliente'
-    const [result] = await pool.query(
+    await pool.query(
       `INSERT INTO usuarios 
          (nombre, email, password, rol, estado, dosfa, nivel_seguridad) 
        VALUES (?, ?, ?, 'cliente', 1, 'N', 0)`,
       [nombre, email, hashedPassword]
     );
-
-    // 5) Redirigir al login.html en vez de devolver JSON
     return res.redirect(303, '/login.html');
   } catch (err) {
-    console.error('❌ Error al registrar nuevo usuario:', err);
-    return res.status(500).json({ error: 'Error al registrar usuario' });
+    console.error('Error al registrar usuario:', err);
+    res.status(500).json({ error: 'Error al registrar usuario' });
   }
 });
 

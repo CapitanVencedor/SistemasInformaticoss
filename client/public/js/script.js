@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ——— IDLE‐TIMEOUT — desconecta tras 5s sin actividad —
   let idleSeconds = 0;
-  const maxIdle = 5;  // 5 segundos
+  const maxIdle = 60;  // 5 segundos
 
   function resetIdle() {
     idleSeconds = 0;
