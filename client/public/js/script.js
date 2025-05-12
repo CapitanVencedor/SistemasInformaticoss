@@ -1,7 +1,7 @@
 // client/public/js/script.js
 
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Script cargado');
+  console.log('Script cargado correctamente');
 
   // ——— LOGIN ——————————————————————————————
   const loginForm = document.getElementById('loginForm');
@@ -26,9 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('sesionIniciada', 'true');
         localStorage.setItem('usuario', JSON.stringify(data.user));
         localStorage.setItem('rol', data.user.rol);
-
         localStorage.setItem('portafolioId', data.user.portafolioId);
-                // Redirige según rol
+
+        // Redirige según rol
         if (data.user.rol === 'admin' || data.user.rol === 'gestor') {
           window.location.href = '/gestor/dashboard.html';
         } else {
@@ -98,34 +98,34 @@ document.addEventListener('DOMContentLoaded', () => {
     await loadClientes();
   };
 
- function refreshClienteTable() {
-  if (!clienteTable) return;
-  clienteTable.innerHTML = '';
-  clientes.forEach(c => {
-    const tr = document.createElement('tr');
-    tr.setAttribute('data-portafolio-id', c.portafolioId);
-    tr.innerHTML = `
-      <td>${c.id}</td>
-      <td>${c.nombre}</td>
-      <td>${c.email}</td>
-      <td>
-        <button onclick="editCliente(${c.id})">Editar</button>
-        <button onclick="deleteCliente(${c.id})">Eliminar</button>
-      </td>
-    `;
-    clienteTable.appendChild(tr);
-  });
+  function refreshClienteTable() {
+    if (!clienteTable) return;
+    clienteTable.innerHTML = '';
+    clientes.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-portafolio-id', c.portafolioId);
+      tr.innerHTML = `
+        <td>${c.id}</td>
+        <td>${c.nombre}</td>
+        <td>${c.email}</td>
+        <td>
+          <button onclick="editCliente(${c.id})">Editar</button>
+          <button onclick="deleteCliente(${c.id})">Eliminar</button>
+        </td>
+      `;
+      clienteTable.appendChild(tr);
+    });
 
-  clienteTable.addEventListener('click', (e) => {
-    const fila = e.target.closest('tr');
-    if (!fila) return;
+    clienteTable.addEventListener('click', (e) => {
+      const fila = e.target.closest('tr');
+      if (!fila) return;
 
-    const portafolioId = fila.dataset.portafolioId;
-    if (portafolioId) {
-      cargarHistorial(portafolioId);
-    }
-  });
-}
+      const portafolioId = fila.dataset.portafolioId;
+      if (portafolioId) {
+        cargarHistorial(portafolioId);
+      }
+    });
+  }
 
   // ——— CRUD ACTIVOS (CLIENTE) ——————————————————————
   const btnAgregarActivo = document.getElementById('btnAgregarActivo');
@@ -196,26 +196,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const comprarForm   = document.getElementById('formComprarMain');
   const comprarSelect = document.getElementById('comprarActivoMain');
   const comprarCant   = document.getElementById('comprarCantidadMain');
-  // Se asume que guardaste el portafolio tras el login
-  const usuario       = JSON.parse(localStorage.getItem('usuario') || '{}');
+  const comprarValor  = document.getElementById('comprarValorMain');
   const portafolio_id = +localStorage.getItem('portafolioId');
-
-  // —————— CÁLCULO AUTOMÁTICO DEL VALOR UNITARIO ——————
-  const comprarValor = document.getElementById('comprarValorMain');
 
   comprarCant.addEventListener('input', async () => {
     const qty = parseFloat(comprarCant.value);
-    if (!qty) {
-      comprarValor.value = '';
-      return;
-    }
-  
+    if (!qty) { comprarValor.value = ''; return; }
     const activo_id = +comprarSelect.value;
-  
-    // 🟡 AÑADE ESTO para depurar:
     console.log('Activo seleccionado:', activo_id);
     console.log('Llamando a:', activo_id === 2 ? '/api/crypto/gold' : '/api/crypto/price');
-  
     try {
       const res = await fetch(activo_id === 2 ? '/api/crypto/gold' : '/api/crypto/price');
       if (!res.ok) throw new Error('No price');
@@ -226,8 +215,6 @@ document.addEventListener('DOMContentLoaded', () => {
       comprarValor.value = '';
     }
   });
-    
-    // ————————————————————————————————————————————————
 
   if (comprarForm) {
     comprarForm.addEventListener('submit', async e => {
@@ -235,28 +222,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const activo_id = +comprarSelect.value;
       const cantidad  = +comprarCant.value;
       const ip_origen = location.hostname;
-
       try {
-        // 1) Pido precio actual
         const resPrice = await fetch(activo_id === 2 ? '/api/crypto/gold' : '/api/crypto/price');
         if (!resPrice.ok) throw new Error('No hay precio disponible');
         const { precio } = await resPrice.json();
-
-        // 2) Registro la compra
         const resTx = await fetch('/api/transacciones/comprar', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ portafolio_id, activo_id, cantidad, precio, ip_origen })
+          body: JSON.stringify({ portafolio_id, activo_id, cantidad, precio, ip_origen })
         });
         const body = await resTx.json();
         if (!resTx.ok) throw new Error(body.error || 'Error al comprar');
-
         alert('Compra registrada correctamente');
-
-        // 3) Refresca datos
         if (typeof loadPortafolios === 'function') await loadPortafolios();
         if (typeof loadClientes   === 'function') await loadClientes();
-
       } catch (err) {
         console.error('❌ Error al comprar:', err);
         alert('No se pudo completar la compra');
@@ -267,77 +246,30 @@ document.addEventListener('DOMContentLoaded', () => {
   // ——— MODALES ——————————————————————————————
   function openModal(m)  { m.style.display = 'flex'; }
   function closeModal(m) { m.style.display = 'none'; }
-
   document.querySelectorAll('.modal .close').forEach(el =>
-    el.addEventListener('click', () =>
-      closeModal(el.closest('.modal'))
-    )
+    el.addEventListener('click', () => closeModal(el.closest('.modal')))
   );
   window.addEventListener('click', e => {
-    if (e.target.classList.contains('modal'))
-      closeModal(e.target);
+    if (e.target.classList.contains('modal')) closeModal(e.target);
   });
+
+  // ——— IDLE‐TIMEOUT — desconecta tras 5s sin actividad —
+  let idleSeconds = 0;
+  const maxIdle = 5;  // 5 segundos
+
+  function resetIdle() {
+    idleSeconds = 0;
+    console.log('🕑 Idle reiniciado');
+  }
+  ['mousemove','mousedown','keydown','scroll','touchstart']
+    .forEach(evt => document.addEventListener(evt, resetIdle, true));
+
+  setInterval(() => {
+    idleSeconds++;
+    console.log(`⏱ Inactivo: ${idleSeconds}s`);
+    if (idleSeconds >= maxIdle) {
+      console.log('🔒 Tiempo de inactividad superado, redirigiendo a logout');
+      window.location.href = '/logout.html';
+    }
+  }, 1000);
 });
-
-// —————— CÁLCULO AUTOMÁTICO DEL VALOR UNITARIO PARA VENTA ——————
-
-const venderSelect   = document.getElementById('venderActivoMain');
-const venderCant     = document.getElementById('venderCantidadMain');
-const venderValor    = document.getElementById('venderValorMain');
-
-// Cuando cambie el activo o la cantidad, recalculamos precio
-venderSelect.addEventListener('change', calcularPrecioVenta);
-venderCant.addEventListener('input',   calcularPrecioVenta);
-
-async function calcularPrecioVenta() {
-  const qty = parseFloat(venderCant.value);
-  const activo_id = +venderSelect.value;
-  if (!qty) {
-    venderValor.value = '';
-    return;
-  }
-  try {
-    const endpoint = activo_id === 2 ? '/api/crypto/gold' : '/api/crypto/price';
-    const res = await fetch(endpoint);
-    if (!res.ok) throw new Error('No hay precio disponible');
-    const { precio } = await res.json();
-    const total = precio * qty;
-    venderValor.value = total.toFixed(2);
-  } catch (err) {
-    console.error('Error al obtener precio de venta:', err);
-    venderValor.value = '';
-  }
-}
-
-
-async function cargarHistorial(portafolioId) {
-  try {
-    const res = await fetch(`/api/transacciones/historial/${portafolioId}`);
-    const historial = await res.json();
-
-    const tablaHistorial = document.getElementById('tablaHistorial');
-    tablaHistorial.innerHTML = historial.map(transaccion => `
-      <tr>
-        <td>${transaccion.tipo}</td>
-        <td>${transaccion.cantidad}</td>
-        <td>${transaccion.valor_unitario.toFixed(2)} €</td>
-        <td>${transaccion.activo_id === 1 ? 'Bitcoin' : transaccion.activo_id === 2 ? 'Oro' : 'Fiat'}</td>
-        <td>${new Date(transaccion.timestamp).toLocaleString()}</td>
-      </tr>
-    `).join('');
-  } catch (err) {
-    console.error('Error al cargar historial:', err);
-    alert('No se pudo cargar el historial de transacciones.');
-  }
-}
-
-document.getElementById('clienteTable').addEventListener('click', (e) => {
-  const fila = e.target.closest('tr');
-  if (!fila) return;
-
-  const portafolioId = fila.dataset.portafolioId;
-  if (portafolioId) {
-    cargarHistorial(portafolioId);
-  }
-});
-
