@@ -76,60 +76,30 @@ app.get('/api/crypto/price', async (req, res) => {
     res.status(500).json({ error: 'No se pudo obtener el precio de BTC' });
   }
 });
-// Caché en memoria para precio oro (2 min)
-app.get('/api/crypto/gold', async (req, res) => {
-  if (goldPriceCache.precio !== null && (Date.now() - goldPriceCache.timestamp) < GOLD_PRICE_TTL) {
-    return res.json({ precio: goldPriceCache.precio });
-  }
-
-  try {
-    const { data } = await axios.get('https://api.metalpriceapi.com/v1/latest', {
-      params: {
-        api_key: 'beabd5fcbef2f00f93d11adf808172df',
-        base: 'XAU',
-        currencies: 'EUR'
-      }
-    });
-
-    const precio = data.rates.EUR;
-    goldPriceCache = { timestamp: Date.now(), precio };
-    res.json({ precio });
-  } catch (err) {
-    console.error('❌ Error precio del oro:', err.message);
-    res.status(500).json({ error: 'Error al obtener precio del oro' });
-  }
-});
-
+// Caché en memoria para precio de oro (tether-gold) con CoinGecko (2 min)
 let goldPriceCache = { timestamp: 0, precio: null };
 const GOLD_PRICE_TTL = 2 * 60 * 1000;
 
 app.get('/api/crypto/gold', async (req, res) => {
+  // Si tenemos caché reciente, la devolvemos
   if (goldPriceCache.precio !== null && (Date.now() - goldPriceCache.timestamp) < GOLD_PRICE_TTL) {
     return res.json({ precio: goldPriceCache.precio });
   }
-
   try {
-    const { data } = await axios.get('https://api.metalpriceapi.com/v1/latest', {
-      params: {
-        api_key: 'beabd5fcbef2f00f93d11adf808172df',
-        base: 'XAU',
-        currencies: 'EUR'
-      }
-    });
-
-    const precio = data.rates.EUR;
-    goldPriceCache = {
-      timestamp: Date.now(),
-      precio
-    };
-
+    // CoinGecko usa "tether-gold" como id para oro tokenizado
+    const { data } = await axios.get(
+      'https://api.coingecko.com/api/v3/simple/price',
+      { params: { ids: 'tether-gold', vs_currencies: 'eur' } }
+    );
+    const precio = data['tether-gold'].eur;
+    goldPriceCache = { timestamp: Date.now(), precio };
     res.json({ precio });
-
   } catch (err) {
-    console.error('❌ Error precio del oro:', err.message);
-    res.status(500).json({ error: 'Error al obtener precio del oro' });
+    console.error('Error CoinGecko precio ORO:', err.message);
+    res.status(500).json({ error: 'No se pudo obtener el precio de oro' });
   }
 });
+
 
 
 // Servir front-end estático
