@@ -2,80 +2,390 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Aurum Project - Gestor Dashboard</title>
+  <title>Aurum Gestor Dashboard</title>
   <link rel="stylesheet" href="/gestor/css/style.css">
+  <style>
+    body { background:#0f1c2e; color:#fff; font-family:sans-serif; margin:0; }
+    header { background:#13294b; padding:1rem; display:flex; align-items:center; }
+    header h1 { flex:1; margin:0; font-size:1.5rem; color:#ff0; }
+    nav a { margin:0 0.5rem; color:#bbb; text-decoration:none; }
+    nav a.active, nav a:hover { color:#fff; }
+    main { padding:2rem; }
+    section { display:none; background:#1a2640; padding:1.5rem; border-radius:6px; margin-bottom:2rem; }
+    section.active { display:block; }
+    table { width:100%; border-collapse:collapse; margin-top:1rem; }
+    th,td { border:1px solid #33415a; padding:0.5rem; }
+    th { background:#24324a; }
+    .btn { background:#e67e22; color:#fff; border:none; padding:0.5rem 1rem; cursor:pointer; border-radius:4px;}
+    .btn.small { padding:0.25rem 0.5rem; font-size:0.9rem;}
+    .flex { display:flex; align-items:center; flex-wrap:wrap; gap:0.5rem; }
+    .flex input, .flex select { padding:0.3rem; background:#24324a; color:#fff; border:1px solid #33415a; border-radius:4px; }
+    /* Modal */
+    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; }
+    .modal-content { background:#fff; color:#000; padding:1rem; border-radius:6px; width:320px; position:relative; }
+    .modal-content h3 { margin-top:0; }
+    .modal-content .close { position:absolute; top:0.5rem; right:0.75rem; cursor:pointer; font-size:1.2rem; }
+    .modal-content input { width:100%; margin-bottom:0.75rem; padding:0.5rem; }
+  </style>
 </head>
 <body>
 
-  <!-- Control de acceso: sólo gestores o admins -->
   <script>
-    const sesion = localStorage.getItem('sesionIniciada');
-    const rol    = localStorage.getItem('rol');
-    if (sesion !== 'true' || (rol !== 'gestor' && rol !== 'admin')) {
-      alert('Acceso restringido. Sólo para gestores o administradores.');
-      window.location.href = '/';
+    // Control de acceso
+    const sesion = localStorage.getItem('sesionIniciada'), rol = localStorage.getItem('rol');
+    if (sesion!=='true' || (rol!=='gestor' && rol!=='admin')) {
+      alert('Acceso restringido.');
+      location.href='/';
     }
   </script>
 
-  <nav>
+  <header>
     <h1>Aurum Gestor Dashboard</h1>
-    <ul>
-      <li><a href="#" id="linkClientes">Gestión de Clientes</a></li>
-      <li><a href="#" id="linkPortafolios">Portafolios</a></li>
-      <li><a href="/gestor/logout.html">Cerrar Sesión</a></li>
-    </ul>
-  </nav>
+    <nav>
+      <a href="#" data-tab="clientes" class="active">Clientes</a>
+      <a href="#" data-tab="portafolios">Portafolios</a>
+      <a href="#" data-tab="transacciones">Transacciones</a>
+      <a href="#" data-tab="activos">Activos</a>
+      <a href="#" data-tab="auditoria">Auditoría</a>
+      <a href="/gestor/logout.html">Cerrar Sesión</a>
+    </nav>
+  </header>
 
   <main>
-    <!-- sección 1: crud clientes -->
-    <section id="seccionClientes" class="crud-section">
+    <!-- --> 
+    <section id="clientes" class="active">
       <h2>Gestión de Clientes</h2>
-      <button id="btnAgregar">Agregar Nuevo Cliente</button>
+      <div class="flex">
+        <input id="buscarCliente" type="text" placeholder="Buscar por nombre/email">
+        <button id="btnAgregarCliente" class="btn">Agregar Cliente</button>
+      </div>
       <table>
         <thead>
-          <tr>
-            <th>ID</th><th>Nombre</th><th>Email</th><th>Acciones</th>
-          </tr>
+          <tr><th>ID</th><th>Nombre</th><th>Email</th><th>Estado</th><th>Acciones</th></tr>
         </thead>
-        <tbody id="clienteTable"></tbody>
+        <tbody id="tablaClientes"><tr><td colspan="5">Cargando…</td></tr></tbody>
       </table>
     </section>
 
-    <!-- sección 2: listado portafolios -->
-    <section id="seccionPortafolios" class="crud-section" style="display:none;">
+    <section id="portafolios">
       <h2>Resumen de Portafolios</h2>
+      <button id="btnOrdenarPort" class="btn small">Ordenar fecha ▲/▼</button>
       <table>
         <thead>
-          <tr>
-            <th>ID</th><th>Cliente</th><th>Nombre Portafolio</th><th>Saldo Total</th><th>Acciones</th>
-          </tr>
+          <tr><th>ID</th><th>Cliente</th><th>Nombre</th><th>Saldo (€)</th><th>Creación</th><th>Ver</th></tr>
         </thead>
-        <tbody id="portafolioTable"></tbody>
+        <tbody id="tablaPortafolios"><tr><td colspan="6">Cargando…</td></tr></tbody>
+      </table>
+    </section>
+
+    <section id="transacciones">
+      <h2>Historial de Transacciones</h2>
+      <div class="flex">
+        <input id="filterDesde" type="date">
+        <input id="filterHasta" type="date">
+        <input id="filterImporte" type="number" step="any" placeholder="Importe ≥">
+        <select id="filterActivo">
+          <option value="">Todos</option>
+          <option value="bitcoin">Bitcoin</option>
+          <option value="oro">Oro</option>
+          <option value="fiat">Euro</option>
+        </select>
+        <button id="btnFiltrarTx" class="btn">Filtrar</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Port.</th><th>Activo</th><th>Tipo</th>
+          <th>Cant.</th><th>Precio U. (€)</th><th>Total (€)</th><th>Fecha</th>
+        </tr></thead>
+        <tbody id="tablaTx"><tr><td colspan="8">Cargando…</td></tr></tbody>
+      </table>
+    </section>
+
+    <section id="activos">
+      <h2>Listado de Activos</h2>
+      <table>
+        <thead><tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Precio Actual (€)</th></tr></thead>
+        <tbody id="tablaActivos"><tr><td colspan="4">Cargando…</td></tr></tbody>
+      </table>
+    </section>
+
+    <section id="auditoria">
+      <h2>Registro de Auditoría</h2>
+      <table>
+        <thead><tr><th>ID</th><th>Entidad</th><th>Operación</th><th>Usuario</th><th>Fecha</th></tr></thead>
+        <tbody id="tablaAuditoria"><tr><td colspan="5">Cargando…</td></tr></tbody>
       </table>
     </section>
   </main>
 
-  <!-- Modal para agregar/editar cliente -->
+
+  <!-- Modal Cliente -->
   <div id="modalCliente" class="modal">
     <div class="modal-content">
       <span class="close">&times;</span>
-      <h2>Cliente</h2>
-      <form id="clienteForm">
-        <input type="hidden" id="clienteId">
-        <div class="input-group">
-          <label for="nombre">Nombre:</label>
-          <input type="text" id="nombre" required>
-        </div>
-        <div class="input-group">
-          <label for="email">Email:</label>
-          <input type="email" id="email" required>
-        </div>
-        <button type="submit">Guardar</button>
-      </form>
+      <h3 id="clienteModalTitle">Cliente</h3>
+      <input type="hidden" id="clienteId">
+      <input type="text" id="clienteNombre" placeholder="Nombre" required>
+      <input type="email" id="clienteEmail" placeholder="Email" required>
+      <select id="clienteEstado">
+        <option value="1">Activo</option>
+        <option value="0">Inactivo</option>
+      </select>
+      <button id="guardarCliente" class="btn">Guardar</button>
     </div>
   </div>
 
 
-  <script src="/gestor/js/script.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded',()=>{
+
+    // --- manejo de pestañas ---
+    document.querySelectorAll('header nav a[data-tab]').forEach(a=>{
+      a.onclick=e=>{
+        e.preventDefault();
+        document.querySelectorAll('header nav a').forEach(x=>x.classList.remove('active'));
+        a.classList.add('active');
+        document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+        document.getElementById(a.dataset.tab).classList.add('active');
+      };
+    });
+
+    // --- CLIENTES ---
+    let _clientes=[];
+    const tbCli = document.getElementById('tablaClientes');
+
+    async function loadClientes(){
+      try {
+        const r = await fetch('/api/usuarios');
+        _clientes = await r.json();
+        renderClientes(_clientes);
+      } catch {
+        tbCli.innerHTML = `<tr><td colspan="5">Error al cargar clientes.</td></tr>`;
+      }
+    }
+    function renderClientes(arr){
+      if(!arr.length){
+        tbCli.innerHTML=`<tr><td colspan="5">Sin clientes.</td></tr>`;
+        return;
+      }
+      tbCli.innerHTML = arr.map(u=>`
+        <tr>
+          <td>${u.id}</td>
+          <td>${u.nombre||u.name||'–'}</td>
+          <td>${u.email}</td>
+          <td>${u.estado==1?'Activo':'Inactivo'}</td>
+          <td>
+            <button class="btn small" data-id="${u.id}" data-mode="edit">✎</button>
+            <button class="btn small" data-id="${u.id}" data-mode="del">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+    document.getElementById('buscarCliente').oninput=e=>{
+      const t=e.target.value.toLowerCase();
+      renderClientes(_clientes.filter(u=>
+        (u.nombre||u.name||'').toLowerCase().includes(t)
+        || u.email.toLowerCase().includes(t)
+      ));
+    };
+
+    // Modal de cliente
+    const modalCli = document.getElementById('modalCliente'),
+          inpId    = document.getElementById('clienteId'),
+          inpNom   = document.getElementById('clienteNombre'),
+          inpEmail = document.getElementById('clienteEmail'),
+          inpEst   = document.getElementById('clienteEstado'),
+          titleCli = document.getElementById('clienteModalTitle');
+
+    function openModal(mode,id){
+      if(mode==='add'){
+        titleCli.textContent='Añadir Cliente';
+        inpId.value=''; inpNom.value=''; inpEmail.value=''; inpEst.value='1';
+      } else {
+        const u=_clientes.find(x=>x.id==id);
+        titleCli.textContent='Editar Cliente';
+        inpId.value=u.id; inpNom.value=u.nombre||u.name; inpEmail.value=u.email;
+        inpEst.value=u.estado;
+      }
+      modalCli.style.display='flex';
+    }
+    document.getElementById('btnAgregarCliente').onclick=_=>openModal('add');
+    tbCli.onclick=e=>{
+      const b=e.target.closest('button');
+      if(!b) return;
+      const id=b.dataset.id, m=b.dataset.mode;
+      if(m==='del'){
+        if(confirm('Eliminar cliente '+id+'?')){
+          fetch(`/api/usuarios/${id}`,{method:'DELETE'})
+            .then(_=>loadClientes());
+        }
+      } else {
+        openModal('edit',id);
+      }
+    };
+    document.querySelector('#modalCliente .close').onclick=_=>{
+      modalCli.style.display='none';
+    };
+    document.getElementById('guardarCliente').onclick=async()=>{
+      const id=inpId.value,
+            body={ nombre:inpNom.value, email:inpEmail.value, estado:parseInt(inpEst.value) };
+      const url = id? `/api/usuarios/${id}` : '/api/usuarios',
+            method = id? 'PUT' : 'POST';
+      await fetch(url,{
+        method,
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      modalCli.style.display='none';
+      loadClientes();
+    };
+
+    // --- PORTAFOLIOS ---
+    let _portafolios=[], portAsc=false;
+    const tbPort = document.getElementById('tablaPortafolios');
+    async function loadPortafolios(){
+      try {
+        const r = await fetch('/api/portafolios');
+        _portafolios = await r.json();
+        renderPortafolios();
+      } catch {
+        tbPort.innerHTML=`<tr><td colspan="6">Error cargando portafolios.</td></tr>`;
+      }
+    }
+    function renderPortafolios(){
+      const arr=[..._portafolios].sort((a,b)=>{
+        const da=new Date(a.created_at||a.createdAt), db=new Date(b.created_at||b.createdAt);
+        return portAsc ? da-db : db-da;
+      });
+      if(!arr.length){
+        tbPort.innerHTML=`<tr><td colspan="6">Sin portafolios.</td></tr>`; return;
+      }
+      tbPort.innerHTML = arr.map(p=>`
+        <tr>
+          <td>${p.id}</td>
+          <td>${p.usuario_nombre||p.usuario?.nombre||'–'}</td>
+          <td>${p.nombre||p.nombre_portafolio||'–'}</td>
+          <td>${parseFloat(p.saldo_total||p.saldo||0).toFixed(2)}</td>
+          <td>${new Date(p.created_at||p.createdAt).toLocaleString()}</td>
+          <td><button class="btn small" onclick="location.href='/gestor/portfolio.html?pid=${p.id}'">👁️</button></td>
+        </tr>
+      `).join('');
+    }
+    document.getElementById('btnOrdenarPort').onclick=_=>{
+      portAsc=!portAsc;
+      renderPortafolios();
+    };
+
+    // --- TRANSACCIONES ---
+    let _tx=[];
+    const tbTx = document.getElementById('tablaTx');
+    async function loadTransacciones(){
+      try{
+        const r=await fetch('/api/transacciones');
+        _tx=await r.json();
+        renderTx(_tx);
+      }catch{
+        tbTx.innerHTML=`<tr><td colspan="8">Error cargando transacciones.</td></tr>`;
+      }
+    }
+    function renderTx(arr){
+      if(!arr.length){
+        tbTx.innerHTML=`<tr><td colspan="8">Sin transacciones.</td></tr>`; return;
+      }
+      tbTx.innerHTML=arr.map(t=>`
+        <tr>
+          <td>${t.id}</td>
+          <td>${t.portafolio_id}</td>
+          <td>${t.activo_tipo||t.tipo_activo||'–'}</td>
+          <td>${t.tipo_tx||t.tipo||'–'}</td>
+          <td>${parseFloat(t.cantidad).toFixed(
+                (t.activo_tipo==='oro'?4:
+                 t.activo_tipo==='bitcoin'?9:2))}</td>
+          <td>${parseFloat(t.precio).toFixed(2)}</td>
+          <td>${(t.precio*t.cantidad).toFixed(2)}</td>
+          <td>${new Date(t.created_at||t.fecha).toLocaleString()}</td>
+        </tr>
+      `).join('');
+    }
+    document.getElementById('btnFiltrarTx').onclick=_=>{
+      let f=[..._tx];
+      const d0=document.getElementById('filterDesde').value,
+            d1=document.getElementById('filterHasta').value,
+            imp=parseFloat(document.getElementById('filterImporte').value)||0,
+            act=document.getElementById('filterActivo').value;
+      if(d0) f=f.filter(t=>new Date(t.created_at||t.fecha)>=new Date(d0));
+      if(d1) f=f.filter(t=>new Date(t.created_at||t.fecha)<=new Date(d1));
+      if(imp) f=f.filter(t=>(t.precio*t.cantidad)>=imp);
+      if(act) f=f.filter(t=>(t.activo_tipo||t.tipo_activo)===act);
+      renderTx(f);
+    };
+
+    // --- ACTIVOS ---
+    const tbAct = document.getElementById('tablaActivos');
+    async function loadActivos(){
+      try{
+        const r=await fetch('/api/activos');
+        const arr=await r.json();
+        const rows = await Promise.all(arr.map(async a=>{
+          const key=a.tipo||a.clave;
+          const dec=(key==='oro'?4:(key==='bitcoin'?9:2));
+          let precio=1;
+          if(key==='bitcoin'){
+            const js=await (await fetch('/api/crypto/price?activo=bitcoin')).json();
+            precio=parseFloat(js.precio);
+          }
+          if(key==='oro'){
+            const js=await (await fetch('/api/metals/gold')).json();
+            precio=parseFloat(js.precio);
+          }
+          return `<tr>
+            <td>${a.id}</td><td>${a.nombre||a.nombre_activo}</td>
+            <td>${key}</td><td>${precio.toFixed(dec)}</td>
+          </tr>`;
+        }));
+        tbAct.innerHTML=rows.join('');
+      }catch{
+        tbAct.innerHTML=`<tr><td colspan="4">Error cargando activos.</td></tr>`;
+      }
+    }
+
+    // --- AUDITORÍA ---
+    const tbAud = document.getElementById('tablaAuditoria');
+    async function loadAuditoria(){
+      // intenta /api/auditoria, si no existe cae en /api/alertas
+      let ep='/api/auditoria';
+      try{
+        const test=await fetch(ep);
+        if(!test.ok) ep='/api/alertas';
+      }catch{ ep='/api/alertas'; }
+      try{
+        const r=await fetch(ep);
+        const arr=await r.json();
+        if(!arr.length){
+          tbAud.innerHTML=`<tr><td colspan="5">Sin registros.</td></tr>`;
+        } else {
+          tbAud.innerHTML=arr.map(r=>`
+            <tr>
+              <td>${r.id}</td>
+              <td>${r.entidad||r.table||r.tabla}</td>
+              <td>${r.operacion||r.action}</td>
+              <td>${r.usuario_nombre||r.usuario_id||r.userId}</td>
+              <td>${new Date(r.created_at||r.fecha).toLocaleString()}</td>
+            </tr>`).join('');
+        }
+      }catch{
+        tbAud.innerHTML=`<tr><td colspan="5">Error cargando auditoría.</td></tr>`;
+      }
+    }
+
+    // carga inicial
+    loadClientes();
+    loadPortafolios();
+    loadTransacciones();
+    loadActivos();
+    loadAuditoria();
+
+  });
+  </script>
 </body>
 </html>
