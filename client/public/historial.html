@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aurum Client – Historial</title>
+  <link rel="stylesheet" href="/client/css/style.css" />
+  <style>
+    body { background: #0f1c2e; color: #fff; font-family: Inter, sans-serif; }
+    header, nav { background: #13294b; padding: 1rem; }
+    nav a { color: #fff; margin-right: 1rem; text-decoration: none; }
+    nav a.active { text-decoration: underline; }
+    main { max-width: 900px; margin: 2rem auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { padding: 0.75rem; border: 1px solid #33415a; text-align: center; }
+    th { background: #24324a; }
+    td { background: #1f2b44; }
+    .empty { color: #bbb; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Aurum Client</h1>
+    <nav>
+      <a href="/client/main.html">Inicio</a>
+      <a href="/client/portfolio.html">Portfolio</a>
+      <a href="/client/historial.html" class="active">Historial</a>
+      <a href="/client/crypto_chart.html">Criptos</a>
+      <a href="/client/oro_chart.html">Metales</a>
+      <a href="/client/logout.html">Cerrar Sesión</a>
+    </nav>
+  </header>
+  <main>
+    <h2>Historial de Transacciones</h2>
+    <p>A continuación tienes tu historial completo, ordenado de más reciente a más antiguo, con valor actual calculado en tiempo real.</p>
+    <table id="historialTable">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Activo</th>
+          <th>Cantidad</th>
+          <th>Precio unitario (€)</th>
+          <th>Total transacción (€)</th>
+          <th>Valor actual (€)</th>
+        </tr>
+      </thead>
+      <tbody id="historialBody">
+        <tr><td colspan="7" class="empty">Cargando historial…</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const portafolioId = +localStorage.getItem('portafolioId') || 0;
+    const body = document.getElementById('historialBody');
+    const mapActivo = { 1:'bitcoin', 2:'oro', 3:'euro' };
+    const mapLabel  = { bitcoin:'Bitcoin', oro:'Oro', euro:'Euro' };
+
+    if (!portafolioId) {
+      body.innerHTML = '<tr><td colspan="7" class="empty">Portafolio no encontrado. Inicia sesión de nuevo.</td></tr>';
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/transacciones/historial/${portafolioId}`);
+      if (!res.ok) throw new Error(`Servidor respondió ${res.status}`);
+      const trans = await res.json();
+      if (!Array.isArray(trans) || trans.length === 0) {
+        body.innerHTML = '<tr><td colspan="7" class="empty">No hay transacciones para este portafolio.</td></tr>';
+        return;
+      }
+
+      // Construimos filas iniciales (valor actual se rellenará después)
+      body.innerHTML = trans.map(tx => {
+        const fecha = new Date(tx.timestamp).toLocaleString();
+        const tipo  = tx.tipo.charAt(0).toUpperCase() + tx.tipo.slice(1);
+        const act   = mapLabel[ mapActivo[tx.activo_id] ] || tx.activo_id;
+        const qty   = parseFloat(tx.cantidad).toFixed(8);
+        const unit  = parseFloat(tx.valor_unitario).toFixed(2);
+        const tot   = (parseFloat(tx.valor_unitario)*parseFloat(tx.cantidad)).toFixed(2);
+        // dataset-activo para poder luego calcular valor actual
+        return `
+          <tr data-activo="${mapActivo[tx.activo_id]}" data-qty="${qty}">
+            <td>${fecha}</td>
+            <td>${tipo}</td>
+            <td>${act}</td>
+            <td>${qty}</td>
+            <td>${unit}</td>
+            <td>${tot}</td>
+            <td class="current-value">–</td>
+          </tr>`;
+      }).join('');
+
+      // Ahora rellenamos “Valor actual” fila a fila
+      const rows = document.querySelectorAll('#historialBody tr');
+      for (const tr of rows) {
+        const activo = tr.dataset.activo;
+        const qty    = parseFloat(tr.dataset.qty) || 0;
+        let price    = 0;
+
+        try {
+          if (activo === 'bitcoin') {
+            const js = await (await fetch('/api/crypto/price?activo=bitcoin')).json();
+            price = parseFloat(js.precio);
+          } else if (activo === 'oro') {
+            const js = await (await fetch('/api/metals/gold')).json();
+            price = parseFloat(js.precio);
+          } else {
+            price = 1;
+          }
+        } catch {
+          price = 0;
+        }
+
+        const valActual = (price * qty).toFixed(activo==='oro'?4:2);
+        tr.querySelector('.current-value').textContent = price
+          ? valActual
+          : '–';
+      }
+
+    } catch (err) {
+      console.error('Error al cargar historial:', err);
+      body.innerHTML = '<tr><td colspan="7" class="empty">No se pudo cargar el historial.</td></tr>';
+    }
+  });
+  </script>
+</body>
+</html>
