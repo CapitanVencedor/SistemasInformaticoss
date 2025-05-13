@@ -19,19 +19,20 @@
   </script>
 
   <style>
-    .portfolio-section { max-width: 800px; margin: 2rem auto; padding: 1rem; background: #1a2640; border-radius: 8px; color: #fff; }
+    .portfolio-section { max-width: 800px; margin: 2rem auto; padding: 1rem; background: #1a2640; border-radius: 8px; color: #fff; position: relative; }
+    .balance-container { position: absolute; top: 1rem; right: 1rem; font-size: 1.25rem; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
     th, td { padding: 0.75rem; border: 1px solid #33415a; }
     th { background: #24324a; }
     td { background: #1f2b44; }
-    #btnGenerarRenta, #btnAgregarActivo { background: #e67e22; color: #fff; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; margin: 0.5rem 0; }
-    #btnGenerarRenta:hover, #btnAgregarActivo:hover { opacity: 0.9; }
-    #rentaFormContainer { background: #24324a; padding: 1rem; border-radius: 6px; margin-top: 1rem; }
-    #rentaForm .input-group { margin-bottom: 0.75rem; }
-    #rentaForm label { display: block; font-weight: bold; margin-bottom: 0.25rem; }
-    #rentaForm input { width: 100%; padding: 0.5rem; background: #1a2640; color: #fff; border: 1px solid #33415a; border-radius: 4px; }
-    #rentaForm button { background: #27ae60; color: #fff; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; }
-    #rentaForm button:hover { opacity: 0.9; }
+    button { background: #e67e22; color: #fff; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; margin: 0.5rem 0; }
+    button:hover { opacity: 0.9; }
+    .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); align-items:center; justify-content:center; }
+    .modal-content { background:#fff; color:#000; padding:1rem; border-radius:4px; max-width:400px; width:90%; }
+    .close { float:right; cursor:pointer; }
+    .modal-content label { display:block; margin-top:1rem; font-weight:bold; }
+    .modal-content input, .modal-content select { width:100%; padding:.5rem; margin-top:.25rem; }
+    .modal-content button { background:#27ae60; color:#fff; margin-top:1rem; }
   </style>
 </head>
 <body>
@@ -47,8 +48,13 @@
   <main>
     <section class="portfolio-section">
       <h2>Mis Activos</h2>
+      <!-- SALDO TOTAL -->
+      <div class="balance-container">
+        Saldo Total (€): <strong id="balance">–</strong>
+      </div>
+
       <button id="btnAgregarActivo">Agregar Nuevo Activo</button>
-      <table id="portfolioTable">
+      <table>
         <thead>
           <tr>
             <th>Tipo de Activo</th>
@@ -65,7 +71,29 @@
     </section>
   </main>
 
-  <div id="modalActivo" class="modal"> <!-- modal code aquí --> </div>
+  <!-- Modal para Agregar Activo -->
+  <div id="modalActivo" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3>Agregar Nuevo Activo</h3>
+      <form id="formAgregarActivo">
+        <label for="tipoActivo">Tipo de Activo:</label>
+        <select id="tipoActivo" required>
+          <option value="bitcoin">Bitcoin</option>
+          <option value="oro">Oro</option>
+          <option value="fiat">Euro (saldo)</option>
+        </select>
+
+        <label for="cantidadActivo">Cantidad:</label>
+        <input type="number" step="any" id="cantidadActivo" required value="1">
+
+        <label for="precioActivo">Precio total (€):</label>
+        <input type="text" id="precioActivo" readonly placeholder="Se calcula automáticamente">
+
+        <button type="submit">Confirmar</button>
+      </form>
+    </div>
+  </div>
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -75,82 +103,188 @@
       return window.location.href = '/client/logout.html';
     }
 
-    // Carga los activos del backend
+    const mapId = { bitcoin:1, oro:2, fiat:3 };
+
+    // 1) Cargar saldo total
+    async function loadBalance() {
+      try {
+        const res  = await fetch(`/api/portafolios/${portafolioId}`);
+        const data = await res.json();
+        document.getElementById('balance').textContent = parseFloat(data.saldo_total).toFixed(2);
+      } catch {
+        document.getElementById('balance').textContent = '–';
+      }
+    }
+
+    // 2) Cargar activos
     async function loadActivos() {
-      const res = await fetch(`/api/portafolios/${portafolioId}/activos`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const res     = await fetch(`/api/portafolios/${portafolioId}/activos`);
       const activos = await res.json();
-      const tbody = document.getElementById('activoTable');
-      tbody.innerHTML = activos.map(a => {
-        const nombre = a.nombre_activo || a.activo;
-        const key    = nombre.toLowerCase();
-        const qty    = parseFloat(a.cantidad).toFixed(8);
+      document.getElementById('activoTable').innerHTML = activos.map(a => {
+        const key = a.nombre_activo.toLowerCase();
         return `
           <tr data-activo="${key}">
-            <td>${nombre}</td>
-            <td class="qty">${qty}</td>
+            <td>${a.nombre_activo}</td>
+            <td class="qty">${parseFloat(a.cantidad).toFixed(8)}</td>
             <td class="unit-price">–</td>
             <td class="value">–</td>
           </tr>`;
       }).join('');
     }
 
-    // Actualiza precios y valores para cada fila según activo
+    // 3) Actualizar valores y saldo
     async function updateValores() {
-      const rows = document.querySelectorAll('#activoTable tr');
-      for (const row of rows) {
-        const activo = row.dataset.activo;
-        let price = 0;
+      let total = 0;
+      for (const tr of document.querySelectorAll('#activoTable tr')) {
+        const activo = tr.dataset.activo;
+        const qty    = parseFloat(tr.querySelector('.qty').textContent) || 0;
+        let precio   = 0;
+
         try {
           if (activo === 'bitcoin') {
-            const res = await fetch('/api/crypto/price?activo=bitcoin');
-            const data = await res.json();
-            price = parseFloat(data.precio);
+            const js = await (await fetch('/api/crypto/price?activo=bitcoin')).json();
+            precio   = parseFloat(js.precio);
           } else if (activo === 'oro') {
-            const res = await fetch('/api/metals/price?metal=oro');
-            const data = await res.json();
-            price = parseFloat(data.precio);
+            const js = await (await fetch('/api/metals/gold')).json();
+            precio   = parseFloat(js.precio);
           } else {
-            // Fiat o resto, se considera 1:1 con EUR
-            price = 1;
+            precio = 1;
           }
-        } catch (err) {
-          console.error(`Error al obtener precio de ${activo}:`, err);
-          price = 0;
+        } catch {
+          precio = 0;
         }
-        const qty = parseFloat(row.querySelector('.qty').textContent) || 0;
-        row.querySelector('.unit-price').textContent = price ? price.toFixed(2) : '–';
-        const val = price * qty;
-        row.querySelector('.value').textContent = price ? val.toFixed(2) : '–';
+
+        const valor = precio * qty;
+        const dec   = activo === 'oro' ? 4 : 2;
+        tr.querySelector('.unit-price').textContent = precio ? precio.toFixed(dec) : '–';
+        tr.querySelector('.value').textContent      = precio ? valor.toFixed(dec)  : '–';
+        total += valor;
       }
+      document.getElementById('balance').textContent = total.toFixed(2);
     }
 
-    // Inicializa carga y actualizaciones periódicas
-    loadActivos().then(() => {
-      updateValores();
-      setInterval(updateValores, 20000);
-    }).catch(err => {
-      console.error('Error cargando activos:', err);
-      alert('No se pudo cargar los activos.');
-    });
+    // 4) Inicialización
+    loadBalance();
+    loadActivos()
+      .then(updateValores)
+      .catch(()=>alert('Error cargando activos'));
+    setInterval(updateValores, 20000);
 
-    // Generar formulario de renta
+    // 5) Modal “Agregar Activo”
+    const modal    = document.getElementById('modalActivo');
+    const btnOpen  = document.getElementById('btnAgregarActivo');
+    const btnClose = modal.querySelector('.close');
+    const tipoSel  = document.getElementById('tipoActivo');
+    const qtyIn    = document.getElementById('cantidadActivo');
+    const priceIn  = document.getElementById('precioActivo');
+    const form     = document.getElementById('formAgregarActivo');
+
+    btnOpen.onclick  = () => { modal.style.display='flex'; recalcPrecio(); };
+    btnClose.onclick = () => modal.style.display='none';
+    window.onclick    = e => { if(e.target===modal) modal.style.display='none'; };
+
+    // 6) Recalcular precio total (unitario × cantidad)
+    async function recalcPrecio(){
+      const tipo = tipoSel.value;
+      const qty  = parseFloat(qtyIn.value) || 0;
+      if (!qty) {
+        priceIn.value = '';
+        return;
+      }
+
+      let unitPrice = 0;
+      try {
+        if (tipo === 'fiat') {
+          unitPrice = 1;
+        } else if (tipo === 'bitcoin') {
+          const js = await (await fetch('/api/crypto/price?activo=bitcoin')).json();
+          unitPrice = parseFloat(js.precio);
+        } else {
+          const js = await (await fetch('/api/metals/gold')).json();
+          unitPrice = parseFloat(js.precio);
+        }
+      } catch {
+        unitPrice = 0;
+      }
+
+      const total = unitPrice * qty;
+      const dec   = tipo === 'oro' ? 4 : 2;
+      priceIn.value = total.toFixed(dec);
+    }
+    tipoSel.onchange = recalcPrecio;
+    qtyIn.oninput    = recalcPrecio;
+
+    // 7) Enviar formulario de compra + descuento de fiat
+    form.onsubmit = async e => {
+      e.preventDefault();
+      await recalcPrecio();
+      const tipo       = tipoSel.value;
+      const cantidad   = parseFloat(qtyIn.value);
+      const precioTot  = parseFloat(priceIn.value);
+      const unitPrecio = precioTot / (tipo === 'fiat' ? 1 : cantidad);
+
+      // 7.1) Compra del activo seleccionado
+      const compraRes = await fetch('/api/transacciones/comprar',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          portafolio_id: portafolioId,
+          activo_id:     mapId[tipo],
+          cantidad,
+          precio:        unitPrecio,
+          ip_origen:     location.hostname
+        })
+      });
+      if (!compraRes.ok) {
+        alert('Error al agregar activo');
+        return;
+      }
+
+      // 7.2) Si no es fiat, descontamos el equivalente en euros
+      if (tipo !== 'fiat') {
+        const ventaFiat = await fetch('/api/transacciones/vender',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            portafolio_id: portafolioId,
+            activo_id:     mapId.fiat,
+            cantidad:      precioTot,
+            precio:        1,
+            ip_origen:     location.hostname
+          })
+        });
+        if (!ventaFiat.ok) {
+          console.warn('No se pudo descontar el saldo fiat');
+        }
+      }
+
+      // 7.3) Recarga todo
+      modal.style.display='none';
+      form.reset();
+      await loadBalance();
+      await loadActivos();
+      await updateValores();
+    };
+
+    // 8) Generar renta
     document.getElementById('btnGenerarRenta').addEventListener('click', () => {
       const rows = document.querySelectorAll('#activoTable tr');
-      let html = '<h3>Formulario Declaración de la Renta (Ficticio)</h3><form id="rentaForm">';
+      let html  = '<h3>Formulario Declaración de la Renta (Ficticio)</h3><form id="rentaForm">';
       rows.forEach(r => {
-        const nombre = r.cells[0].textContent;
-        const val    = r.cells[3].textContent;
-        html += `<div class="input-group"><label>${nombre} - Valor (€)</label><input type="number" name="${nombre}" value="${val}" readonly></div>`;
+        const nom = r.cells[0].textContent;
+        const val = r.cells[3].textContent;
+        html += `<div class="input-group"><label>${nom} - Valor (€)</label>
+                 <input type="number" name="${nom}" value="${val}" readonly></div>`;
       });
       html += '<button type="submit">Imprimir Formulario</button></form>';
       document.getElementById('rentaFormContainer').innerHTML = html;
-      document.getElementById('rentaForm').addEventListener('submit', e => { e.preventDefault(); window.print(); });
+      document.getElementById('rentaForm').addEventListener('submit', e => {
+        e.preventDefault();
+        window.print();
+      });
     });
+
   });
   </script>
-
-  <script src="/client/js/script.js"></script>
-  <script src="/client/js/operaciones.js"></script>
 </body>
 </html>

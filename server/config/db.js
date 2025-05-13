@@ -5,7 +5,7 @@ const pool = mysql.createPool({
   host: 'localhost',
   port: 3306,
   user: 'root',
-  password: '',
+  password: 'EwnizEv5',
   database: 'aurum_db',
   waitForConnections: true,
   connectionLimit: 10
