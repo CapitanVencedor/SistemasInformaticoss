@@ -25,6 +25,19 @@
       alert('Acceso restringido.');
       location.href = '/';
     }
+
+    // --- Cargamos TODOS los clientes al arrancar el dashboard ---
+    window._clientes = [];
+    async function initClientes() {
+      try {
+        const res = await fetch('/api/usuarios');
+        if (!res.ok) throw 0;
+        window._clientes = await res.json();
+      } catch {
+        console.warn('No se pudo cargar la lista de clientes para lookup.');
+      }
+    }
+    initClientes();
   </script>
 
   <header>
@@ -46,7 +59,7 @@
   <script>
     /**
      * Carga un partial, lo inyecta en #main-content
-     * y re-ejecuta todos sus <script> internos.
+     * y re-ejecuta sus <script> internos.
      */
     async function loadSection(file) {
       const target = document.getElementById('main-content');
@@ -54,19 +67,15 @@
         const res = await fetch(`/gestor/partials/${file}`);
         if (!res.ok) throw new Error(res.status);
         const html = await res.text();
-        // 1) Inyecta el HTML bruto
+        // 1) Inyectar HTML
         target.innerHTML = html;
-        // 2) Vuelve a inyectar cada <script> para forzar ejecución
-        const scripts = target.querySelectorAll('script');
-        scripts.forEach(oldScript => {
-          const newScript = document.createElement('script');
-          // copia atributos (ej: src, type)
-          Array.from(oldScript.attributes)
-               .forEach(attr => newScript.setAttribute(attr.name, attr.value));
-          // copia el contenido inline
-          newScript.textContent = oldScript.textContent;
-          // reemplaza para que se ejecute
-          oldScript.replaceWith(newScript);
+        // 2) Re-ejecutar scripts inline/external
+        target.querySelectorAll('script').forEach(old => {
+          const script = document.createElement('script');
+          Array.from(old.attributes)
+               .forEach(a => script.setAttribute(a.name, a.value));
+          script.textContent = old.textContent;
+          old.replaceWith(script);
         });
       } catch (err) {
         console.error('Error cargando partial', file, err);
@@ -81,7 +90,7 @@
         // marcar activo
         document.querySelectorAll('header nav a').forEach(a => a.classList.remove('active'));
         link.classList.add('active');
-        // cargar sección correspondiente
+        // cargar sección
         loadSection(link.dataset.file);
       });
     });
