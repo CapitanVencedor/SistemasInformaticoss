@@ -2,75 +2,304 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Conectar Wallet Phantom</title>
-  <script src="https://unpkg.com/@solana/web3.js@1.95.0/lib/index.iife.js"></script>
+  <title>BTC Histórico + Tiempo Real</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      background-color: #1a4a8a;
+      background-color: #0f1c2e;
       color: white;
-      font-family: sans-serif;
-      text-align: center;
-      margin-top: 100px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    button {
-      background-color: gold;
-      color: #000;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
+    header {
+      background: #13294b;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .logo {
+      font-size: 1.3rem;
       font-weight: bold;
-      cursor: pointer;
-      margin-top: 20px;
     }
 
-    .info {
-      margin-top: 30px;
-      font-size: 18px;
+    nav ul {
+      list-style: none;
+      display: flex;
+      gap: 1.2rem;
+    }
+
+    nav ul li a {
+      color: #f0f0f0;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 0.4rem 0.6rem;
+      border-radius: 4px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    nav ul li a:hover,
+    nav ul li a.active {
+      background: #ffc107;
+      color: #13294b;
+    }
+
+    /* Responsive */
+    .menu-toggle {
+      display: none;
+      font-size: 1.5rem;
+      color: white;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      nav ul {
+        flex-direction: column;
+        background: #13294b;
+        position: absolute;
+        top: 70px;
+        right: 0;
+        width: 100%;
+        display: none;
+      }
+
+      nav ul.open {
+        display: flex;
+      }
+
+      .menu-toggle {
+        display: block;
+      }
+    }
+
+    main {
+      max-width: 1000px;
+      margin: 3rem auto;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      margin-bottom: 2rem;
+    }
+
+    .controls {
+      margin-bottom: 1.5rem;
+    }
+
+    select {
+      padding: 10px 15px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+      background-color: #243b63;
+      color: white;
+      cursor: pointer;
+    }
+
+    select:focus {
+      outline: none;
+      box-shadow: 0 0 5px #ffc107;
+    }
+
+    canvas {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      padding: 1rem;
+      max-width: 100%;
     }
   </style>
 </head>
-
 <body>
-  <h2>Conectar Wallet Phantom</h2>
-  <button onclick="connectPhantom()">Conectar Wallet</button>
 
-  <div class="info">
-    <p><strong>Dirección:</strong> <span id="address">-</span></p>
-    <p><strong>Saldo (SOL):</strong> <span id="balance">-</span></p>
-  </div>
+  <!-- Header -->
+  <header>
+    <div class="logo">Aurum Client</div>
+    <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+    <nav>
+      <ul id="navLinks">
+        <li><a href="/client/main.html">Inicio</a></li>
+        <li><a href="/client/portfolio.html">Portfolio</a></li>
+        <li><a href="/client/historial.html">Historial</a></li>
+        <li><a href="/client/crypto_chart.html" class="active">Criptos</a></li>
+        <li><a href="/client/oro_chart.html">Metales</a></li>
+        <li><a href="/client/logout.html">Cerrar Sesión</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Main -->
+  <main>
+    <h2>BTC/EUR – Histórico y Tiempo Real (Binance)</h2>
+
+    <div class="controls">
+      <label for="range">Selecciona rango:</label>
+      <select id="range">
+        <option value="1d">Último día</option>
+        <option value="7d">Últimos 7 días</option>
+        <option value="30d">Últimos 30 días</option>
+        <option value="365d">Último año</option>
+      </select>
+    </div>
+
+    <canvas id="btcChart" height="400"></canvas>
+  </main>
 
   <script>
-    async function connectPhantom() {
-      try {
-        if (!window.solana || !window.solana.isPhantom) {
-          alert('Phantom no está instalada.');
-          return;
+    // Responsive nav toggle
+    function toggleMenu() {
+      document.getElementById("navLinks").classList.toggle("open");
+    }
+
+    const ctx = document.getElementById('btcChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'BTC/EUR',
+          data: [],
+          borderColor: '#ffc107',
+          backgroundColor: 'rgba(255,193,7,0.1)',
+          tension: 0.3,
+          pointRadius: 2,
+          pointBackgroundColor: '#ffc107',
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: { color: 'white' }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              label: context => `€ ${context.parsed.y.toFixed(2)}`
+            }
+          }
+        },
+        interaction: {
+          mode: 'nearest',
+          axis: 'x',
+          intersect: false
+        },
+        scales: {
+          x: {
+            type: 'time',
+            time: { unit: 'hour' },
+            ticks: { color: 'white' },
+            grid: { color: '#444' }
+          },
+          y: {
+            ticks: { color: 'white' },
+            grid: { color: '#444' }
+          }
         }
+      }
+    });
 
-        const resp = await window.solana.connect();
-        const publicKey = resp.publicKey.toString();
-        document.getElementById('address').innerText = publicKey;
+    let intervalo = null;
 
-        // Conexión a la red DEVNET
-        const connection = new solanaWeb3.Connection(
-          solanaWeb3.clusterApiUrl('devnet'),
-          'confirmed'
-        );
+    const configuracionRangos = {
+      '1d': { interval: '5m', limit: 288, unit: 'hour' },
+      '7d': { interval: '30m', limit: 336, unit: 'day' },
+      '30d': { interval: '1h', limit: 720, unit: 'day' },
+      '365d': { interval: '1d', limit: 365, unit: 'month' }
+    };
 
-        // Obtener saldo
-        const balance = await connection.getBalance(new solanaWeb3.PublicKey(publicKey));
-        const sol = balance / solanaWeb3.LAMPORTS_PER_SOL;
-        document.getElementById('balance').innerText = sol.toFixed(4);
+    async function fetchBinanceData(interval, limit, unidadTiempo) {
+      try {
+        const url = `https://api.binance.com/api/v3/klines?symbol=BTCEUR&interval=${interval}&limit=${limit}`;
+        const res = await fetch(url);
+        const data = await res.json();
 
+        const prices = data.map(p => ({
+          x: new Date(p[0]),
+          y: parseFloat(p[4])
+        }));
+
+        chart.data.datasets[0].data = prices;
+        chart.options.scales.x.time.unit = unidadTiempo;
+
+        escalarY(prices.map(p => p.y));
+        chart.update();
       } catch (err) {
-        console.error("❌ Error al conectar:", err);
-        alert("Error al conectar a Phantom o al obtener el saldo.");
+        console.error('Error al obtener datos de Binance:', err);
       }
     }
-  </script>
-</body>
-<script src="/script.js"></script>
 
+    function escalarY(valores) {
+      const min = Math.min(...valores);
+      const max = Math.max(...valores);
+      chart.options.scales.y.min = min - 50;
+      chart.options.scales.y.max = max + 50;
+    }
+
+    function activarActualizacionTiempoReal() {
+      intervalo = setInterval(async () => {
+        try {
+          const res = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCEUR&interval=5m&limit=1');
+          const data = await res.json();
+          const nuevoPunto = {
+            x: new Date(data[0][0]),
+            y: parseFloat(data[0][4])
+          };
+
+          document.title = `BTC €${nuevoPunto.y}`;
+          chart.data.datasets[0].data.push(nuevoPunto);
+          if (chart.data.datasets[0].data.length > 288) {
+            chart.data.datasets[0].data.shift();
+          }
+
+          escalarY(chart.data.datasets[0].data.map(p => p.y));
+          chart.update();
+        } catch (err) {
+          console.error('Error al actualizar en tiempo real:', err);
+        }
+      }, 2000);
+    }
+
+    function actualizarGrafico(rango) {
+      const conf = configuracionRangos[rango];
+
+      if (intervalo) {
+        clearInterval(intervalo);
+        intervalo = null;
+      }
+
+      fetchBinanceData(conf.interval, conf.limit, conf.unit);
+
+      if (rango === '1d') {
+        activarActualizacionTiempoReal();
+      }
+    }
+
+    document.getElementById('range').addEventListener('change', function () {
+      actualizarGrafico(this.value);
+    });
+
+    // Carga inicial
+    actualizarGrafico('1d');
+  </script>
+
+  <script src="/script.js"></script>
+</body>
 </html>
