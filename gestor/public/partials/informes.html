@@ -1,0 +1,81 @@
+<section id="informes">
+    <style>
+      section { background:#1a2640; padding:1.5rem; border-radius:6px; color:#fff; }
+      .controls { display:flex; gap:1rem; margin-bottom:1rem; }
+      .chart-container { width:100%; max-width:800px; margin:auto; }
+    </style>
+  
+    <h2>Informes de Ganancias/Pérdidas</h2>
+    <div class="controls">
+      <select id="selCliente">
+        <option value="">Todos los clientes</option>
+      </select>
+      <select id="selPeriodo">
+        <option value="semanal">Semanal</option>
+        <option value="mensual" selected>Mensual</option>
+        <option value="anual">Anual</option>
+      </select>
+      <button id="btnCargar">Cargar informe</button>
+    </div>
+  
+    <div class="chart-container">
+      <canvas id="pnlChart"></canvas>
+    </div>
+  
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      // 1) Inicializar select de clientes
+      window._clientes.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.id;
+        opt.textContent = u.email || u.nombre;
+        document.getElementById('selCliente').append(opt);
+      });
+  
+      document.getElementById('btnCargar').addEventListener('click', cargarInforme);
+  
+      async function cargarInforme() {
+        const clienteId = document.getElementById('selCliente').value;
+        const periodo   = document.getElementById('selPeriodo').value;
+        const params    = new URLSearchParams({ periodo });
+        if (clienteId) params.append('usuarioId', clienteId);
+  
+        const res = await fetch('/api/informes?' + params);
+        if (!res.ok) return alert('Error al cargar informe');
+        const data = await res.json();
+  
+        // Agrupar PnL por periodo
+        const labels = [...new Set(data.map(r => r.periodo))].sort();
+        const series = {};
+  
+        data.forEach(r => {
+          if (!series[r.portafolio_id]) {
+            series[r.portafolio_id] = { label: `PF#${r.portafolio_id}`, data: {} };
+          }
+          series[r.portafolio_id].data[r.periodo] = parseFloat(r.pnl);
+        });
+  
+        const datasets = Object.values(series).map(s => ({
+          label: s.label,
+          data: labels.map(l => s.data[l] || 0),
+          fill: false,
+        }));
+  
+        // Dibujar con Chart.js
+        const ctx = document.getElementById('pnlChart').getContext('2d');
+        if (window._pnlChart) window._pnlChart.destroy();
+        window._pnlChart = new Chart(ctx, {
+          type: 'line',
+          data: { labels, datasets },
+          options: {
+            scales: { y: { title: { display:true, text:'P&L (€)' } },
+                      x: { title: { display:true, text:'Periodo' } } }
+          }
+        });
+      }
+  
+      // Auto-carga inicial
+      cargarInforme();
+    </script>
+  </section>
+  

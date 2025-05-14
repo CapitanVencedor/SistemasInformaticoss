@@ -30,6 +30,7 @@ app.use('/api/ohlc',          require('./routes/ohlc_data'));
 app.use('/api/metals', require('./routes/metals'));
 app.use('/api/portafolios', require('./routes/portafolios'));
 app.use('/api/auditoria', require('./routes/auditoria'));
+app.use('/api/informes', require('./routes/informes'));
 
 
 // Caché en memoria para BTC histórico (10 min)
