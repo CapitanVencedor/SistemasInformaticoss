@@ -19,15 +19,26 @@
     async function loadActivos() {
       try {
         const r = await fetch('/api/activos');
+        if (!r.ok) throw 0;
         const arr = await r.json();
         const rows = await Promise.all(arr.map(async a => {
-          const key = a.tipo || a.clave,
-                dec = key === 'oro' ? 4 : key === 'bitcoin' ? 9 : 2,
-                precio = key === 'bitcoin'
-                  ? parseFloat((await (await fetch('/api/crypto/price?activo=bitcoin')).json()).precio)
-                  : key === 'oro'
-                    ? parseFloat((await (await fetch('/api/metals/gold')).json()).precio)
-                    : 1;
+          const key = a.tipo || a.clave;
+          const dec = key === 'oro' ? 4 : key === 'bitcoin' ? 9 : 2;
+
+          // Precio según tipo
+          let precio = 1;
+          if (key === 'bitcoin') {
+            const resp = await fetch('/api/crypto/price?activo=bitcoin');
+            if (!resp.ok) throw 0;
+            const js = await resp.json();
+            precio = parseFloat(js.precio);
+          } else if (key === 'oro') {
+            const resp = await fetch('/api/crypto/gold');
+            if (!resp.ok) throw 0;
+            const js = await resp.json();
+            precio = parseFloat(js.precio);
+          }
+
           return `<tr>
             <td>${a.id}</td>
             <td>${a.nombre || a.nombre_activo}</td>
