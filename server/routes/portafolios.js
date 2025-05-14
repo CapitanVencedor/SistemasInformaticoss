@@ -2,7 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
 
-// 1) Listar TODOS los portafolios (Admin/Gestor)
+// 1) Listar TODOS los portafolios (Admin/Gestor) — saldo calculado al vuelo
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -11,7 +11,18 @@ router.get('/', async (req, res) => {
         p.usuario_id,
         u.nombre         AS nombre_usuario,
         p.nombre         AS nombre_portafolio,
-        p.saldo_total,
+        -- saldo = ventas – compras
+        IFNULL((
+          SELECT SUM(
+            CASE 
+              WHEN tipo = 'venta'  THEN cantidad * precio
+              WHEN tipo = 'compra' THEN -cantidad * precio
+              ELSE 0
+            END
+          )
+          FROM transacciones t
+          WHERE t.portafolio_id = p.id
+        ), 0) AS saldo_total,
         p.fecha_creacion
       FROM portafolios p
       JOIN usuarios u ON p.usuario_id = u.id
@@ -23,6 +34,7 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener portafolios' });
   }
 });
+
 
 // 2) Listar portafolios de UN usuario (Gestor/Admin)
 router.get('/usuario/:usuarioId', async (req, res) => {
