@@ -2,6 +2,8 @@
 const express = require('express');
 const router  = express.Router();
 const pool    = require('../config/db');
+const { registrarAuditoria } = require('../scripts/auditoria');
+
 
 // 1) Obtener todas las transacciones
 router.get('/', async (req, res) => {
@@ -126,7 +128,7 @@ router.delete('/:id', async (req, res) => {
 
 // 6) COMPRAR activo
 router.post('/comprar', async (req, res) => {
-  const { portafolio_id, activo_id, cantidad, precio, ip_origen } = req.body;
+  const { portafolio_id, activo_id, cantidad, precio, ip_origen, usuario_id } = req.body;
   const tipo = 'compra';
 
   try {
@@ -143,8 +145,14 @@ router.post('/comprar', async (req, res) => {
        ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)`,
       [portafolio_id, activo_id, cantidad]
     );
-
-    return res.json({ success: true, mensaje: 'Compra registrada correctamente' });
+    await registrarAuditoria(
+      usuario_id || null,
+      `Compra de ${cantidad} del activo ID ${activo_id} por ${precio} €`,
+      ip_origen,
+      'transacciones',
+      'compra'
+    );
+        return res.json({ success: true, mensaje: 'Compra registrada correctamente' });
   } catch (err) {
     console.error("Error en la compra:", err);
     return res.status(500).json({ error: 'Error al registrar la compra' });

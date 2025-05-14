@@ -167,7 +167,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const portafolioId = +localStorage.getItem('portafolioId') || 0;
-
+  const usuario = JSON.parse(localStorage.getItem('usuario')) || {};
   // Refs de DOM
   const sComp = document.getElementById('comprarActivoMain');
   const cComp = document.getElementById('comprarCantidadMain');
@@ -265,12 +265,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!q || !t) return alert('Introduce una cantidad válida.');
     try {
       await postTx('/api/transacciones/comprar', {
-        portafolio_id: portafolioId,
-        activo_id:     idn,
-        cantidad:      q,
-        precio:        t / q,
-        ip_origen:     location.hostname
-      });
+      portafolio_id: portafolioId,
+      activo_id:     idn,
+      cantidad:      q,
+      precio:        t / q,
+      ip_origen:     location.hostname,
+      usuario_id:    usuario.id  // ✅ nuevo campo para auditoría
+    });
+
       alert('✅ Compra realizada');
       window.location.reload();
     } catch (err) {

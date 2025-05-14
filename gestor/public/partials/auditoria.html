@@ -1,52 +1,93 @@
-<!-- auditoria.html (partial para AJAX) -->
-<section id="auditoria">  <!-- ↑ Añadido id="auditoria" para que el nav muestre esta sección -->
+<!-- /gestor/public/partials/auditoria.html -->
+<section id="auditoria">
   <style>
-    section { display:block; background:#1a2640; padding:1.5rem; border-radius:6px; margin-bottom:2rem; }
-    table { width:100%; border-collapse:collapse; margin-top:1rem; }
-    th,td { border:1px solid #33415a; padding:0.5rem; }
-    th { background:#24324a; }
+    section {
+      display: block;
+      background: #1a2640;
+      padding: 1.5rem;
+      border-radius: 6px;
+      margin-bottom: 2rem;
+      color: white;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      color: white;
+    }
+    th, td {
+      border: 1px solid #33415a;
+      padding: 0.5rem;
+      text-align: left;
+    }
+    th {
+      background: #24324a;
+    }
+    .auditoria-row {
+      background-color: #1a2640;
+    }
+    .alerta-row {
+      background-color: #402222;
+      color: #fbb;
+      font-weight: bold;
+    }
+    tr:hover {
+      background-color: #2b3955;
+    }
   </style>
 
-  <h2>Registro de Auditoría</h2>
+  <h2>Registro de Auditoría y Alertas</h2>
   <table>
     <thead>
-      <tr><th>ID</th><th>Entidad</th><th>Operación</th><th>Usuario</th><th>Fecha</th></tr>
+      <tr>
+        <th>ID</th>
+        <th>Entidad</th>
+        <th>Operación</th>
+        <th>Usuario</th>
+        <th>Fecha</th>
+      </tr>
     </thead>
-    <tbody id="tablaAuditoria"><tr><td colspan="5">Cargando…</td></tr></tbody>
+    <tbody id="tablaAuditoria">
+      <tr><td colspan="5">Cargando…</td></tr>
+    </tbody>
   </table>
 
   <script>
+    // ¡Se invoca AL INSTANTE en cuanto se inyecta este partial!
+    loadAuditoria();
+
     async function loadAuditoria() {
-      let ep = '/api/auditoria';
+      const tb = document.getElementById('tablaAuditoria');
       try {
-        const test = await fetch(ep);
-        if (!test.ok) ep = '/api/alertas';
-      } catch {
-        ep = '/api/alertas';
-      }
-      try {
-        const arr = await (await fetch(ep)).json();
-        const tb = document.getElementById('tablaAuditoria');
-        if (!arr.length) {
+        const res = await fetch('/api/auditoria');
+        if (!res.ok) throw new Error('Error en servidor');
+        const registros = await res.json();
+
+        if (!registros.length) {
           tb.innerHTML = `<tr><td colspan="5">Sin registros.</td></tr>`;
-        } else {
-          tb.innerHTML = arr.map(r=>`
-            <tr>
-              <td>${r.id}</td>
-              <td>${r.entidad||r.table||r.tabla}</td>
-              <td>${r.operacion||r.action}</td>
-              <td>${r.usuario_nombre||r.usuario_id||r.userId}</td>
-              <td>${new Date(r.created_at||r.fecha).toLocaleString()}</td>
-            </tr>
-          `).join('');
+          return;
         }
-      } catch {
-        document.getElementById('tablaAuditoria').innerHTML =
-          `<tr><td colspan="5">Error cargando auditoría.</td></tr>`;
+
+        tb.innerHTML = registros.map(r => {
+          const tipo = (r.entidad || '').toLowerCase();
+          const clase = tipo === 'alerta' ? 'alerta-row' : 'auditoria-row';
+          const tooltip = r.accion ? `title="${r.accion}"` : '';
+          const icon = tipo === 'alerta' ? '⚠️' : '📋';
+
+          return `
+            <tr class="${clase}" ${tooltip}>
+              <td>${icon} ${r.id}</td>
+              <td>${r.entidad || '—'}</td>
+              <td>${r.operacion || r.accion || '—'}</td>
+              <td>${r.usuario_nombre || r.usuario_id || '—'}</td>
+              <td>${new Date(r.fecha).toLocaleString()}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tb.innerHTML = `<tr><td colspan="5">Error cargando auditoría.</td></tr>`;
+        console.error('loadAuditoria:', err);
       }
     }
-
-    // init
-    loadAuditoria();
   </script>
 </section>
