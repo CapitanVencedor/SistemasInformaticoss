@@ -1,0 +1,48 @@
+<!-- activos.html (partial para AJAX) -->
+<section id="activos">  <!-- ↑ Añadido id="activos" para que el nav muestre esta sección -->
+  <style>
+    section { display:block; background:#1a2640; padding:1.5rem; border-radius:6px; margin-bottom:2rem; }
+    table { width:100%; border-collapse:collapse; margin-top:1rem; }
+    th,td { border:1px solid #33415a; padding:0.5rem; }
+    th { background:#24324a; }
+  </style>
+
+  <h2>Listado de Activos</h2>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Precio Actual (€)</th></tr>
+    </thead>
+    <tbody id="tablaActivos"><tr><td colspan="4">Cargando…</td></tr></tbody>
+  </table>
+
+  <script>
+    async function loadActivos() {
+      try {
+        const r = await fetch('/api/activos');
+        const arr = await r.json();
+        const rows = await Promise.all(arr.map(async a => {
+          const key = a.tipo || a.clave,
+                dec = key === 'oro' ? 4 : key === 'bitcoin' ? 9 : 2,
+                precio = key === 'bitcoin'
+                  ? parseFloat((await (await fetch('/api/crypto/price?activo=bitcoin')).json()).precio)
+                  : key === 'oro'
+                    ? parseFloat((await (await fetch('/api/metals/gold')).json()).precio)
+                    : 1;
+          return `<tr>
+            <td>${a.id}</td>
+            <td>${a.nombre || a.nombre_activo}</td>
+            <td>${key}</td>
+            <td>${precio.toFixed(dec)}</td>
+          </tr>`;
+        }));
+        document.getElementById('tablaActivos').innerHTML = rows.join('');
+      } catch {
+        document.getElementById('tablaActivos').innerHTML =
+          `<tr><td colspan="4">Error cargando activos.</td></tr>`;
+      }
+    }
+
+    // init
+    loadActivos();
+  </script>
+</section>

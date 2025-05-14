@@ -1,0 +1,136 @@
+<!-- clientes.html (partial para AJAX) -->
+<section id="clientes">  <!-- ↑ Añadido id="clientes" para que el nav pueda mostrar esta sección -->
+  <style>
+    section { display:block; background:#1a2640; padding:1.5rem; border-radius:6px; margin-bottom:2rem; }
+    table { width:100%; border-collapse:collapse; margin-top:1rem; }
+    th,td { border:1px solid #33415a; padding:0.5rem; }
+    th { background:#24324a; }
+    .btn { background:#e67e22; color:#fff; border:none; padding:0.5rem 1rem; cursor:pointer; border-radius:4px;}
+    .flex { display:flex; align-items:center; gap:0.5rem; }
+    .modal-content { background:#fff; color:#000; padding:1rem; border-radius:6px; width:320px; position:relative; }
+  </style>
+
+  <h2>Gestión de Clientes</h2>
+  <div class="flex">
+    <input id="buscarCliente" type="text" placeholder="Buscar por nombre/email">
+    <button id="btnAgregarCliente" class="btn">Agregar Cliente</button>
+  </div>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Nombre</th><th>Email</th><th>Estado</th><th>Acciones</th></tr>
+    </thead>
+    <tbody id="tablaClientes"><tr><td colspan="5">Cargando…</td></tr></tbody>
+  </table>
+
+  <!-- Modal Cliente -->
+  <div id="modalCliente" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3 id="clienteModalTitle">Cliente</h3>
+      <input type="hidden" id="clienteId">
+      <input type="text" id="clienteNombre" placeholder="Nombre" required>
+      <input type="email" id="clienteEmail" placeholder="Email" required>
+      <select id="clienteEstado">
+        <option value="1">Activo</option>
+        <option value="0">Inactivo</option>
+      </select>
+      <button id="guardarCliente" class="btn">Guardar</button>
+    </div>
+  </div>
+
+  <script>
+    let _clientes = [];
+
+    async function loadClientes() {
+      try {
+        const r = await fetch('/api/usuarios');
+        _clientes = await r.json();
+        renderClientes(_clientes);
+      } catch {
+        document.getElementById('tablaClientes').innerHTML =
+          `<tr><td colspan="5">Error al cargar clientes.</td></tr>`;
+      }
+    }
+
+    function renderClientes(arr) {
+      const tb = document.getElementById('tablaClientes');
+      if (!arr.length) {
+        tb.innerHTML = `<tr><td colspan="5">Sin clientes.</td></tr>`;
+        return;
+      }
+      tb.innerHTML = arr.map(u => `
+        <tr>
+          <td>${u.id}</td>
+          <td>${u.nombre||u.name||'–'}</td>
+          <td>${u.email}</td>
+          <td>${u.estado==1?'Activo':'Inactivo'}</td>
+          <td>
+            <button class="btn small" data-id="${u.id}" data-mode="edit">✎</button>
+            <button class="btn small" data-id="${u.id}" data-mode="del">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    document.getElementById('buscarCliente').addEventListener('input', e => {
+      const t = e.target.value.toLowerCase();
+      renderClientes(_clientes.filter(u =>
+        (u.nombre||u.name||'').toLowerCase().includes(t) ||
+        u.email.toLowerCase().includes(t)
+      ));
+    });
+
+    // Modal
+    const modalCli = document.getElementById('modalCliente'),
+          inpId    = document.getElementById('clienteId'),
+          inpNom   = document.getElementById('clienteNombre'),
+          inpEmail = document.getElementById('clienteEmail'),
+          inpEst   = document.getElementById('clienteEstado'),
+          titleCli = document.getElementById('clienteModalTitle');
+
+    function openModal(mode,id) {
+      if (mode==='add') {
+        titleCli.textContent='Añadir Cliente';
+        inpId.value=''; inpNom.value=''; inpEmail.value=''; inpEst.value='1';
+      } else {
+        const u = _clientes.find(x=>x.id==id);
+        titleCli.textContent='Editar Cliente';
+        inpId.value=u.id; inpNom.value=u.nombre||u.name; inpEmail.value=u.email; inpEst.value=u.estado;
+      }
+      modalCli.style.display='flex';
+    }
+
+    document.getElementById('btnAgregarCliente').onclick = () => openModal('add');
+
+    document.getElementById('tablaClientes').onclick = e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const id = b.dataset.id, m = b.dataset.mode;
+      if (m==='del') {
+        if (confirm(`Eliminar cliente ${id}?`)) {
+          fetch(`/api/usuarios/${id}`,{method:'DELETE'}).then(loadClientes);
+        }
+      } else openModal('edit',id);
+    };
+
+    document.querySelector('#modalCliente .close').onclick =
+      () => modalCli.style.display='none';
+
+    document.getElementById('guardarCliente').onclick = async () => {
+      const id = inpId.value,
+            body = { nombre:inpNom.value, email:inpEmail.value, estado:parseInt(inpEst.value) },
+            url = id? `/api/usuarios/${id}` : '/api/usuarios',
+            method = id? 'PUT' : 'POST';
+      await fetch(url,{
+        method,
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(body)
+      });
+      modalCli.style.display='none';
+      loadClientes();
+    };
+
+    // init
+    loadClientes();
+  </script>
+</section>

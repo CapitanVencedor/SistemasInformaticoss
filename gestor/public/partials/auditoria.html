@@ -1,0 +1,52 @@
+<!-- auditoria.html (partial para AJAX) -->
+<section id="auditoria">  <!-- ↑ Añadido id="auditoria" para que el nav muestre esta sección -->
+  <style>
+    section { display:block; background:#1a2640; padding:1.5rem; border-radius:6px; margin-bottom:2rem; }
+    table { width:100%; border-collapse:collapse; margin-top:1rem; }
+    th,td { border:1px solid #33415a; padding:0.5rem; }
+    th { background:#24324a; }
+  </style>
+
+  <h2>Registro de Auditoría</h2>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Entidad</th><th>Operación</th><th>Usuario</th><th>Fecha</th></tr>
+    </thead>
+    <tbody id="tablaAuditoria"><tr><td colspan="5">Cargando…</td></tr></tbody>
+  </table>
+
+  <script>
+    async function loadAuditoria() {
+      let ep = '/api/auditoria';
+      try {
+        const test = await fetch(ep);
+        if (!test.ok) ep = '/api/alertas';
+      } catch {
+        ep = '/api/alertas';
+      }
+      try {
+        const arr = await (await fetch(ep)).json();
+        const tb = document.getElementById('tablaAuditoria');
+        if (!arr.length) {
+          tb.innerHTML = `<tr><td colspan="5">Sin registros.</td></tr>`;
+        } else {
+          tb.innerHTML = arr.map(r=>`
+            <tr>
+              <td>${r.id}</td>
+              <td>${r.entidad||r.table||r.tabla}</td>
+              <td>${r.operacion||r.action}</td>
+              <td>${r.usuario_nombre||r.usuario_id||r.userId}</td>
+              <td>${new Date(r.created_at||r.fecha).toLocaleString()}</td>
+            </tr>
+          `).join('');
+        }
+      } catch {
+        document.getElementById('tablaAuditoria').innerHTML =
+          `<tr><td colspan="5">Error cargando auditoría.</td></tr>`;
+      }
+    }
+
+    // init
+    loadAuditoria();
+  </script>
+</section>

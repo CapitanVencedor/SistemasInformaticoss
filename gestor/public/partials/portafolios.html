@@ -1,0 +1,145 @@
+<!-- portafolios.html (partial para AJAX) -->
+<section id="portafolios"> <!-- ↑ Añadido id="portafolios" para que el nav muestre esta sección -->
+  <style>
+    section { display:block; background:#1a2640; padding:1.5rem; border-radius:6px; margin-bottom:2rem; }
+    table { width:100%; border-collapse:collapse; margin-top:1rem; }
+    th,td { border:1px solid #33415a; padding:0.5rem; }
+    th { background:#24324a; }
+    .btn { background:#e67e22; color:#fff; border:none; padding:0.5rem 1rem; cursor:pointer; border-radius:4px;}
+    .btn.small { padding:0.25rem 0.5rem; font-size:0.9rem;}
+    .modal-content { background:#fff; color:#000; padding:1rem; border-radius:6px; width:320px; position:relative; }
+  </style>
+
+  <h2>Resumen de Portafolios</h2>
+  <button id="btnOrdenarPort" class="btn small">Ordenar fecha ▲/▼</button>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Cliente</th><th>Nombre</th><th>Saldo (€)</th><th>Creación</th><th>Ver</th></tr>
+    </thead>
+    <tbody id="tablaPortafolios"><tr><td colspan="6">Cargando…</td></tr></tbody>
+  </table>
+
+  <!-- Modal Detalle -->
+  <div id="modalPort" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3>Detalle del Portafolio</h3>
+      <div id="detallesPort">Cargando…</div>
+    </div>
+  </div>
+
+  <script>
+    let _portafolios = [], portAsc = false;
+
+    async function loadPortafolios() {
+      try {
+        const r = await fetch('/api/portafolios');
+        _portafolios = await r.json();
+        renderPortafolios();
+      } catch {
+        document.getElementById('tablaPortafolios').innerHTML =
+          `<tr><td colspan="6">Error cargando portafolios.</td></tr>`;
+      }
+    }
+
+    function renderPortafolios() {
+      const tb = document.getElementById('tablaPortafolios');
+      const arr = [..._portafolios].sort((a, b) => {
+        const da = new Date(a.created_at || a.createdAt),
+              db = new Date(b.created_at || b.createdAt);
+        return portAsc ? da - db : db - da;
+      });
+      if (!arr.length) {
+        tb.innerHTML = `<tr><td colspan="6">Sin portafolios.</td></tr>`;
+        return;
+      }
+      tb.innerHTML = arr.map(p => `
+        <tr>
+          <td>${p.id}</td>
+          <td>${p.usuario_nombre || p.usuario?.nombre || '–'}</td>
+          <td>${p.nombre || p.nombre_portafolio || '–'}</td>
+          <td>€${parseFloat(p.saldo_total || p.saldo || 0).toFixed(2)}</td>
+          <td>${new Date(p.created_at || p.createdAt).toLocaleString()}</td>
+          <td>
+            <button class="btn small btn-view" data-id="${p.id}">👁️</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    document.getElementById('btnOrdenarPort').onclick = () => {
+      portAsc = !portAsc;
+      renderPortafolios();
+    };
+
+    // --- Modal detalle ---
+    const modalPort    = document.getElementById('modalPort'),
+          btnClosePort = modalPort.querySelector('.close'),
+          detPort      = document.getElementById('detallesPort');
+
+    async function viewPortafolio(id) {
+      try {
+        // 1) Datos del portafolio
+        const resP = await fetch(`/api/portafolios/${id}`);
+        if (!resP.ok) throw 0;
+        const p = await resP.json();
+
+        // 2) Email del cliente
+        let email = '–';
+        if (p.usuario_id) {
+          const u = await (await fetch(`/api/usuarios/${p.usuario_id}`)).json();
+          email = u.email || '–';
+        }
+
+        // 3) Activos y transacciones
+        const [aRes, tRes] = await Promise.all([
+          fetch(`/api/portafolios/${id}/activos`),
+          fetch(`/api/portafolios/${id}/transacciones`)
+        ]);
+        const activos       = aRes.ok ? await aRes.json() : [],
+              transacciones = tRes.ok ? await tRes.json() : [];
+
+        // 4) Render en el modal
+        detPort.innerHTML = `
+          <p><strong>Cliente:</strong> ${email}</p>
+          <p><strong>Saldo total:</strong> €${parseFloat(p.saldo_total || 0).toFixed(2)}</p>
+          <h4>Activos</h4>
+          <ul>
+            ${activos.map(a => {
+              const d = a.decimales ?? (a.tipo === 'oro' ? 4 : (a.tipo === 'bitcoin' ? 9 : 2));
+              return `<li>${a.nombre_activo} — ${parseFloat(a.cantidad).toFixed(d)} 
+                        unidades @ €${parseFloat(a.precio_unitario).toFixed(2)}</li>`;
+            }).join('')}
+          </ul>
+          <h4>Transacciones</h4>
+          <ul>
+            ${transacciones.map(t => {
+              const d = (t.activo_tipo === 'oro' ? 4 : (t.activo_tipo === 'bitcoin' ? 9 : 2));
+              return `<li>${new Date(t.created_at || t.fecha).toLocaleString()} — 
+                        <strong>${(t.tipo_tx || t.tipo).toUpperCase()}</strong> 
+                        ${parseFloat(t.cantidad).toFixed(d)} ${t.activo_tipo || t.activo} 
+                        @ €${parseFloat(t.precio || t.precio_unitario).toFixed(2)}</li>`;
+            }).join('')}
+          </ul>
+        `;
+        modalPort.style.display = 'flex';
+      } catch {
+        alert('No se pudo cargar detalle del portafolio.');
+      }
+    }
+
+    document.getElementById('tablaPortafolios').addEventListener('click', e => {
+      const b = e.target.closest('.btn-view');
+      if (!b) return;
+      viewPortafolio(b.dataset.id);
+    });
+
+    btnClosePort.onclick = () => modalPort.style.display = 'none';
+    window.addEventListener('click', e => {
+      if (e.target === modalPort) modalPort.style.display = 'none';
+    });
+
+    // init
+    loadPortafolios();
+  </script>
+</section>

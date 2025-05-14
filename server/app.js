@@ -105,6 +105,10 @@ app.get('/api/crypto/gold', async (req, res) => {
 // Servir front-end estático
 app.use('/client', express.static(path.join(__dirname, '../client/public')));
 app.use('/gestor', express.static(path.join(__dirname, '../gestor/public')));
+app.use(
+  '/gestor/partials',
+  express.static(path.join(__dirname, '../gestor/public/partials'))
+);
 
 // Archivos HTML del cliente
 app.get('/',               (req, res) => res.sendFile(path.join(__dirname, '../client/public/login.html')));

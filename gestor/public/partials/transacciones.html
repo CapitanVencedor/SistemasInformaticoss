@@ -1,0 +1,87 @@
+<!-- transacciones.html (partial para AJAX) -->
+<section id="transacciones"> <!-- ↑ Añadido id="transacciones" para que el nav muestre esta sección -->
+  <style>
+    section { display:block; background:#1a2640; padding:1.5rem; border-radius:6px; margin-bottom:2rem; }
+    table { width:100%; border-collapse:collapse; margin-top:1rem; }
+    th,td { border:1px solid #33415a; padding:0.5rem; }
+    th { background:#24324a; }
+    .flex { display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }
+    .btn { background:#e67e22; color:#fff; border:none; padding:0.5rem 1rem; cursor:pointer; border-radius:4px;}
+  </style>
+
+  <h2>Historial de Transacciones</h2>
+  <div class="flex">
+    <input id="filterDesde" type="date">
+    <input id="filterHasta" type="date">
+    <input id="filterImporte" type="number" step="any" placeholder="Importe ≥">
+    <select id="filterActivo">
+      <option value="">Todos</option>
+      <option value="bitcoin">Bitcoin</option>
+      <option value="oro">Oro</option>
+      <option value="fiat">Euro</option>
+    </select>
+    <button id="btnFiltrarTx" class="btn">Filtrar</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Port.</th><th>Activo</th><th>Tipo</th>
+        <th>Cant.</th><th>Precio U. (€)</th><th>Total (€)</th><th>Fecha</th>
+      </tr>
+    </thead>
+    <tbody id="tablaTx"><tr><td colspan="8">Cargando…</td></tr></tbody>
+  </table>
+
+  <script>
+    let _tx = [];
+
+    async function loadTransacciones() {
+      try {
+        const r = await fetch('/api/transacciones');
+        _tx = await r.json();
+        renderTx(_tx);
+      } catch {
+        document.getElementById('tablaTx').innerHTML =
+          `<tr><td colspan="8">Error cargando transacciones.</td></tr>`;
+      }
+    }
+
+    function renderTx(arr) {
+      const tb = document.getElementById('tablaTx');
+      if (!arr.length) {
+        tb.innerHTML = `<tr><td colspan="8">Sin transacciones.</td></tr>`;
+        return;
+      }
+      tb.innerHTML = arr.map(t => `
+        <tr>
+          <td>${t.id}</td>
+          <td>${t.portafolio_id}</td>
+          <td>${t.activo_tipo||t.tipo_activo||'–'}</td>
+          <td>${t.tipo_tx||t.tipo||'–'}</td>
+          <td>${parseFloat(t.cantidad).toFixed(
+                (t.activo_tipo==='oro'?4:
+                 t.activo_tipo==='bitcoin'?9:2))}</td>
+          <td>${parseFloat(t.precio).toFixed(2)}</td>
+          <td>${(t.precio*t.cantidad).toFixed(2)}</td>
+          <td>${new Date(t.created_at||t.fecha).toLocaleString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    document.getElementById('btnFiltrarTx').onclick = () => {
+      let f = [..._tx],
+          d0 = document.getElementById('filterDesde').value,
+          d1 = document.getElementById('filterHasta').value,
+          imp= parseFloat(document.getElementById('filterImporte').value)||0,
+          act= document.getElementById('filterActivo').value;
+      if (d0) f = f.filter(t=> new Date(t.created_at||t.fecha) >= new Date(d0));
+      if (d1) f = f.filter(t=> new Date(t.created_at||t.fecha) <= new Date(d1));
+      if (imp) f = f.filter(t=> (t.precio*t.cantidad) >= imp);
+      if (act) f = f.filter(t=> (t.activo_tipo||t.tipo_activo) === act);
+      renderTx(f);
+    };
+
+    // init
+    loadTransacciones();
+  </script>
+</section>
