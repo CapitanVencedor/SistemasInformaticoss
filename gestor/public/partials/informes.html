@@ -1,81 +1,176 @@
+<!-- gestor/public/partials/informes.html -->
 <section id="informes">
-    <style>
-      section { background:#1a2640; padding:1.5rem; border-radius:6px; color:#fff; }
-      .controls { display:flex; gap:1rem; margin-bottom:1rem; }
-      .chart-container { width:100%; max-width:800px; margin:auto; }
-    </style>
-  
-    <h2>Informes de Ganancias/Pérdidas</h2>
-    <div class="controls">
-      <select id="selCliente">
-        <option value="">Todos los clientes</option>
-      </select>
-      <select id="selPeriodo">
-        <option value="semanal">Semanal</option>
-        <option value="mensual" selected>Mensual</option>
-        <option value="anual">Anual</option>
-      </select>
-      <button id="btnCargar">Cargar informe</button>
-    </div>
-  
-    <div class="chart-container">
-      <canvas id="pnlChart"></canvas>
-    </div>
-  
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-      // 1) Inicializar select de clientes
-      window._clientes.forEach(u => {
-        const opt = document.createElement('option');
-        opt.value = u.id;
-        opt.textContent = u.email || u.nombre;
-        document.getElementById('selCliente').append(opt);
+  <style>
+    /* …Tus estilos intactos… */
+    section {
+      background: #1a2640;
+      padding: 1.5rem;
+      border-radius: 6px;
+      color: #fff;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .controls select,
+    .controls button,
+    .controls a {
+      font-family: inherit;
+      font-size: 1rem;
+      line-height: 1.2;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      border: none;
+      background: #ffc107;
+      color: #000;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: center;
+      transition: background 0.2s;
+    }
+    .controls select {
+      background: #24324a;
+      color: #fff;
+      min-width: 160px;
+    }
+    .controls select:focus,
+    .controls button:focus,
+    .controls a:focus {
+      outline: 2px solid #ffe082;
+    }
+    .controls button:hover,
+    .controls a:hover {
+      background: #e0a800;
+    }
+    .controls a {
+      background: transparent;
+      color: #4fc3f7;
+      padding: 0;
+    }
+    .controls a:hover {
+      color: #81d4fa;
+      text-decoration: underline;
+      background: none;
+    }
+    .chart-container {
+      width: 100%;
+      max-width: 900px;
+      margin: auto;
+    }
+  </style>
+
+  <h2 id="tituloInforme">Informe MENSUAL — Todos los clientes</h2>
+
+  <div class="controls">
+    <select id="selCliente">
+      <option value="">Todos los clientes</option>
+    </select>
+
+    <select id="selPeriodo">
+      <option value="semanal">Semanal</option>
+      <option value="mensual" selected>Mensual</option>
+      <option value="anual">Anual</option>
+    </select>
+
+    <button id="btnCargar">Cargar informe</button>
+    <a id="linkDescarga" href="#" hidden>Descargar CSV</a>
+  </div>
+
+  <div class="chart-container">
+    <canvas id="pnlChart"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // 1) Llenamos select de clientes usando window._clientes
+    window._clientes.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.id;
+      opt.textContent = u.email || u.nombre;
+      document.getElementById('selCliente').append(opt);
+    });
+
+    const btnCargar = document.getElementById('btnCargar');
+    const linkDesc  = document.getElementById('linkDescarga');
+    const titulo    = document.getElementById('tituloInforme');
+    const selCli    = document.getElementById('selCliente');
+    const selPer    = document.getElementById('selPeriodo');
+    let chartInst;
+
+    btnCargar.addEventListener('click', async () => {
+      const clienteId = selCli.value;
+      const periodo   = selPer.value;
+
+      // 2) Ajustamos título
+      const textoCli = clienteId
+        ? selCli.selectedOptions[0].textContent
+        : 'Todos los clientes';
+      titulo.textContent = `Informe ${periodo.toUpperCase()} — ${textoCli}`;
+
+      // 3) Traemos portafolios para mapear portafolio→usuario
+      const portRes = await fetch('/api/portafolios');
+      const portafolios = portRes.ok ? await portRes.json() : [];
+
+      // 4) Petición de datos PnL
+      const params = new URLSearchParams({ periodo });
+      if (clienteId) params.append('usuarioId', clienteId);
+      const res = await fetch('/api/informes?' + params);
+      if (!res.ok) return alert('Error al cargar informe');
+      const data = await res.json();
+
+      // 5) Agrupamos por portafolio, pero usando email/nombre del cliente
+      const labels = [...new Set(data.map(r => r.periodo))].sort();
+      const series = {};
+      data.forEach(r => {
+        // buscamos portafolio y usuario
+        const pf = portafolios.find(p => p.id === r.portafolio_id) || {};
+        const usr = window._clientes.find(c => c.id === pf.usuario_id) || {};
+        const label = usr.email || usr.nombre || `PF#${r.portafolio_id}`;
+
+        if (!series[label]) series[label] = {};
+        series[label][r.periodo] = parseFloat(r.pnl);
       });
-  
-      document.getElementById('btnCargar').addEventListener('click', cargarInforme);
-  
-      async function cargarInforme() {
-        const clienteId = document.getElementById('selCliente').value;
-        const periodo   = document.getElementById('selPeriodo').value;
-        const params    = new URLSearchParams({ periodo });
-        if (clienteId) params.append('usuarioId', clienteId);
-  
-        const res = await fetch('/api/informes?' + params);
-        if (!res.ok) return alert('Error al cargar informe');
-        const data = await res.json();
-  
-        // Agrupar PnL por periodo
-        const labels = [...new Set(data.map(r => r.periodo))].sort();
-        const series = {};
-  
-        data.forEach(r => {
-          if (!series[r.portafolio_id]) {
-            series[r.portafolio_id] = { label: `PF#${r.portafolio_id}`, data: {} };
+
+      const datasets = Object.entries(series).map(([label, map]) => ({
+        label,
+        data: labels.map(l => map[l] || 0),
+        fill: false,
+      }));
+
+      // 6) Renderizamos Chart.js
+      const ctx = document.getElementById('pnlChart').getContext('2d');
+      if (chartInst) chartInst.destroy();
+      chartInst = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          scales: {
+            y: { title: { display: true, text: 'P&L (€)' } },
+            x: { title: { display: true, text: 'Periodo' } }
           }
-          series[r.portafolio_id].data[r.periodo] = parseFloat(r.pnl);
+        }
+      });
+
+      // 7) Generamos el CSV dinámicamente
+      const csvRows = [['periodo', ...Object.keys(series)]];
+      labels.forEach(periodo => {
+        const row = [periodo];
+        Object.values(series).forEach(map => {
+          row.push(map[periodo] != null ? map[periodo] : '');
         });
-  
-        const datasets = Object.values(series).map(s => ({
-          label: s.label,
-          data: labels.map(l => s.data[l] || 0),
-          fill: false,
-        }));
-  
-        // Dibujar con Chart.js
-        const ctx = document.getElementById('pnlChart').getContext('2d');
-        if (window._pnlChart) window._pnlChart.destroy();
-        window._pnlChart = new Chart(ctx, {
-          type: 'line',
-          data: { labels, datasets },
-          options: {
-            scales: { y: { title: { display:true, text:'P&L (€)' } },
-                      x: { title: { display:true, text:'Periodo' } } }
-          }
-        });
-      }
-  
-      // Auto-carga inicial
-      cargarInforme();
-    </script>
-  </section>
-  
+        csvRows.push(row);
+      });
+      const csvText = csvRows.map(r => r.join(',')).join('\n');
+      const blob   = new Blob([csvText], { type: 'text/csv' });
+      linkDesc.href    = URL.createObjectURL(blob);
+      linkDesc.download = `informe-${periodo}-${textoCli.replace(/[@ ]/g,'_')}.csv`;
+      linkDesc.hidden  = false;
+    });
+
+    // 8) Auto-carga inicial
+    btnCargar.click();
+  </script>
+</section>
