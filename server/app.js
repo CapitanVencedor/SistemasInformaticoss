@@ -141,6 +141,6 @@ cron.schedule('*/15 * * * *', () => {
 });
 
 // Arranca el servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor en http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor escuchando en http://192.168.100.2:${PORT}`);
 });
