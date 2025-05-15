@@ -39,12 +39,12 @@
     <nav>
       <a href="/client/main.html">Inicio</a>
       <a href="/client/portfolio.html">Portfolio</a>
-      <a href="/client/historial.html">Historial</a> 
+      <a href="/client/historial.html">Historial</a>
       <a href="/client/crypto_chart.html">Criptos</a>
       <a href="/client/oro_chart.html">Metales</a>
       <a href="/client/phantom_wallet.html">Phantom</a>
       <a href="/client/foro.html">Foro</a>
-       <a href="/client/borrado.html" style="color: #e74c3c;">Eliminar cuenta</a>
+      <a href="/client/borrado.html" style="color: #e74c3c;">Eliminar cuenta</a>
       <a href="/client/logout.html">Cerrar Sesión</a>
     </nav>
   </header>
@@ -54,10 +54,8 @@
     <p>Bienvenido a la plataforma de compraventa de criptomonedas, oro y plata. Tecnología, seguridad y transparencia en tus inversiones.</p>
   </section>
 
-  <!-- NUEVA SECCIÓN DE OPERACIONES -->
   <section class="operaciones" style="padding: 3rem 2rem; text-align: center; background-color: #121a27;">
     <h2 style="margin-bottom: 1rem;">Opera con tus activos</h2>
-
 
     <!-- Comprar -->
     <form id="formComprarMain" style="margin-bottom:2rem;">
@@ -104,6 +102,7 @@
       <input id="swapValor"    type="number" step="any" placeholder="Resultado" readonly />
       <button type="submit">Swapear</button>
     </form>
+  </section>
 
   <section class="features">
     <div class="feature">
@@ -162,186 +161,160 @@
     <p>&copy; 2025 Aurum Project - Cliente | Diseño moderno, seguridad real.</p>
   </footer>
 
+  <!-- SCRIPT UNIFICADO -->
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const portafolioId = +localStorage.getItem('portafolioId') || 0;
+    const usuario      = JSON.parse(localStorage.getItem('usuario')) || {};
+    const mapActivo    = {1:'bitcoin', 2:'oro', 3:'fiat'};
 
-  <!-- SCRIPT DE COMPRA CORREGIDO -->
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const portafolioId = +localStorage.getItem('portafolioId') || 0;
-  const usuario = JSON.parse(localStorage.getItem('usuario')) || {};
-  // Refs de DOM
-  const sComp = document.getElementById('comprarActivoMain');
-  const cComp = document.getElementById('comprarCantidadMain');
-  const vComp = document.getElementById('comprarValorMain');
-  const fComp = document.getElementById('formComprarMain');
+    async function fetchPrecioUnitario(idNum) {
+      const key = mapActivo[idNum];
+      if (key === 'fiat') return 1;
+      const url = key === 'bitcoin'
+        ? '/api/crypto/price?activo=bitcoin'
+        : '/api/metals/price?metal=oro';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Precio no disponible');
+      const data = await res.json();
+      console.log(`👀 Datos crudos [${key}]:`, data);
 
-  const sVend = document.getElementById('venderActivoMain');
-  const cVend = document.getElementById('venderCantidadMain');
-  const vVend = document.getElementById('venderValorMain');
-  const fVend = document.getElementById('formVenderMain');
-
-  const sDe   = document.getElementById('swapDe');
-  const sSw   = document.getElementById('swapA'); 
-  const cSw   = document.getElementById('swapCantidad');
-  const vSw   = document.getElementById('swapValor');
-  const fSw   = document.getElementById('formSwapMain');
-
-  // Mapa ID → clave
-  const mapActivo = {1:'bitcoin', 2:'oro', 3:'fiat'};
-
-  // Pide precio unitario según activo
-  async function fetchPrecioUnitario(idNum) {
-    const key = mapActivo[idNum];
-    if (key === 'fiat') return 1;
-    const url = key === 'bitcoin'
-      ? '/api/crypto/price?activo=bitcoin'
-      : '/api/metals/price?metal=oro';
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Precio no disponible');
-    const { precio } = await res.json();
-    return precio;
-  }
-
-  // Recalcula un campo total = unitario × cantidad
-  async function recTotal(sel, inpQ, inpT) {
-  const q = parseFloat(inpQ.value);
-  inpT.value = '';
-  console.log('👉 Cantidad:', q, 'Activo ID:', sel.value);
-  if (!q) return;
-  try {
-    const unit = await fetchPrecioUnitario(+sel.value);
-    console.log('💰 Precio unitario:', unit);
-    inpT.value = (unit * q).toFixed(2);
-  } catch (err) {
-    console.error('❌ Error al calcular total:', err);
-    inpT.value = '';
-  }
-}
-
-
-  // Eventos compra
-  sComp.addEventListener('change', () => recTotal(sComp, cComp, vComp));
-  cComp.addEventListener('input', () => recTotal(sComp, cComp, vComp));
-
-  // Eventos venta (igual lógica)
-  sVend.addEventListener('change', () => recTotal(sVend, cVend, vVend));
-  cVend.addEventListener('input', () => recTotal(sVend, cVend, vVend));
-
-  // Recalcula swap: (€/De * qty) / €/A
-  async function recSwap() {
-    const q = parseFloat(cSw.value);
-    vSw.value = '';
-    if (!q || sDe.value === sSw.value) return;
-    try {
-      const pD = await fetchPrecioUnitario(+sDe.value);
-      const pA = await fetchPrecioUnitario(+sSw.value);
-      vSw.value = ((pD * q) / pA).toFixed(6);
-    } catch {
-      vSw.value = '';
+      let precio;
+      if (typeof data.precio === 'number') {
+        precio = data.precio;
+      } else if (data[key] && typeof data[key].eur === 'number') {
+        precio = data[key].eur;
+      } else if (typeof data.valor === 'number') {
+        precio = data.valor;
+      } else {
+        throw new Error(`No encontré precio en la respuesta para ${key}`);
+      }
+      return precio;
     }
-  }
 
-  document.getElementById('swapA').addEventListener('change', recSwap);
-  sDe.addEventListener('change', recSwap);
-  cSw.addEventListener('input', recSwap);
-  sSw.addEventListener('change', recSwap);
-
-  // Helper POST
-  async function postTx(path, body) {
-    const res = await fetch(path, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(body)
-    });
-    const data = await res.json();
-    if (!res.ok || !data.success) throw new Error(data.error || data.mensaje);
-  }
-
-  // Submit compra
-  fComp.addEventListener('submit', async e => {
-    e.preventDefault();
-    const idn = +sComp.value;
-    const q   = parseFloat(cComp.value);
-    const t   = parseFloat(vComp.value);
-    if (!q || !t) return alert('Introduce una cantidad válida.');
-    try {
-      await postTx('/api/transacciones/comprar', {
-      portafolio_id: portafolioId,
-      activo_id:     idn,
-      cantidad:      q,
-      precio:        t / q,
-      ip_origen:     location.hostname,
-      usuario_id:    usuario.id  // ✅ nuevo campo para auditoría
-    });
-
-      alert('✅ Compra realizada');
-      window.location.reload();
-    } catch (err) {
-      alert(err.message);
+    async function recTotal(sel, inpQ, inpT) {
+      const q = parseFloat(inpQ.value) || 0;
+      inpT.value = '';
+      if (q <= 0) return;
+      try {
+        const unit = await fetchPrecioUnitario(+sel.value);
+        inpT.value = (unit * q).toFixed(sel.id.includes('swap') ? 6 : 2);
+      } catch (err) {
+        console.error('Error al calcular total:', err);
+      }
     }
-  });
 
-  // Submit venta
-  fVend.addEventListener('submit', async e => {
-    e.preventDefault();
-    const idn = +sVend.value;
-    const q   = parseFloat(cVend.value);
-    const t   = parseFloat(vVend.value);
-    if (!q || !t) return alert('Introduce una cantidad válida.');
-    try {
-      await postTx('/api/transacciones/vender', {
-        portafolio_id: portafolioId,
-        activo_id:     idn,
-        cantidad:      q,
-        precio:        t / q,
-        ip_origen:     location.hostname
+    // DOM refs
+    const sComp = document.getElementById('comprarActivoMain');
+    const cComp = document.getElementById('comprarCantidadMain');
+    const vComp = document.getElementById('comprarValorMain');
+    const fComp = document.getElementById('formComprarMain');
+
+    const sVend = document.getElementById('venderActivoMain');
+    const cVend = document.getElementById('venderCantidadMain');
+    const vVend = document.getElementById('venderValorMain');
+    const fVend = document.getElementById('formVenderMain');
+
+    const sDe   = document.getElementById('swapDe');
+    const sSw   = document.getElementById('swapA');
+    const cSw   = document.getElementById('swapCantidad');
+    const vSw   = document.getElementById('swapValor');
+    const fSw   = document.getElementById('formSwapMain');
+
+    sComp.addEventListener('change', () => recTotal(sComp, cComp, vComp));
+    cComp.addEventListener('input',  () => recTotal(sComp, cComp, vComp));
+    sVend.addEventListener('change', () => recTotal(sVend, cVend, vVend));
+    cVend.addEventListener('input',  () => recTotal(sVend, cVend, vVend));
+
+    sDe.addEventListener('change', () => recTotal(sDe, cSw, vSw));
+    sSw.addEventListener('change', () => recTotal(sDe, cSw, vSw));
+    cSw.addEventListener('input',  () => recTotal(sDe, cSw, vSw));
+
+    async function postTx(path, body) {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(body)
       });
-      await postTx('/api/transacciones/comprar', {
-        portafolio_id: portafolioId,
-        activo_id:     3,
-        cantidad:      t,
-        precio:        1,
-        ip_origen:     location.hostname
-      });
-      alert('✅ Venta y saldo FIAT actualizado');
-      window.location.reload();
-    } catch (err) {
-      alert(err.message);
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || data.mensaje);
     }
-  });
 
-// Submit swap CORREGIDO (main.html)
-fSw.addEventListener('submit', async e => {
-  e.preventDefault();
-
-  const activo_origen_id = +sDe.value;
-  const activo_destino_id = +document.getElementById('swapA').value;
-  const cantidad_origen = parseFloat(cSw.value);
-  const cantidad_destino = parseFloat(vSw.value); // resultado ya calculado
-
-  if (!cantidad_origen || !cantidad_destino) 
-    return alert('Introduce una cantidad válida para swap.');
-
-  try {
-    await postTx('/api/transacciones/swap', {
-      portafolio_id: portafolioId,
-      activo_origen_id,
-      activo_destino_id,
-      cantidad: cantidad_origen,
-      precio: cantidad_destino / cantidad_origen,
-      ip_origen: location.hostname
+    fComp.addEventListener('submit', async e => {
+      e.preventDefault();
+      const q = parseFloat(cComp.value);
+      const t = parseFloat(vComp.value);
+      if (!q || !t) return alert('Introduce una cantidad válida.');
+      try {
+        await postTx('/api/transacciones/comprar', {
+          portafolio_id: portafolioId,
+          activo_id:     +sComp.value,
+          cantidad:      q,
+          precio:        t / q,
+          ip_origen:     location.hostname,
+          usuario_id:    usuario.id
+        });
+        alert('✅ Compra realizada');
+        window.location.reload();
+      } catch (err) {
+        alert(err.message);
+      }
     });
 
-    alert('✅ Swap completado');
-    window.location.reload();
-  } catch (err) {
-    alert(err.message);
-  }
-});
-});
+    fVend.addEventListener('submit', async e => {
+      e.preventDefault();
+      const q = parseFloat(cVend.value);
+      const t = parseFloat(vVend.value);
+      if (!q || !t) return alert('Introduce una cantidad válida.');
+      try {
+        await postTx('/api/transacciones/vender', {
+          portafolio_id: portafolioId,
+          activo_id:     +sVend.value,
+          cantidad:      q,
+          precio:        t / q,
+          ip_origen:     location.hostname
+        });
+        await postTx('/api/transacciones/comprar', {
+          portafolio_id: portafolioId,
+          activo_id:     3,
+          cantidad:      t,
+          precio:        1,
+          ip_origen:     location.hostname
+        });
+        alert('✅ Venta y saldo FIAT actualizado');
+        window.location.reload();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
 
-</script>
-<script src="/js/script.js"></script>
- <script src="/client/js/alertas_btc.js"></script>
- <script src="/client/js/alertas.js"></script>
+    fSw.addEventListener('submit', async e => {
+      e.preventDefault();
+      const origen = +sDe.value;
+      const destino = +sSw.value;
+      const co = parseFloat(cSw.value);
+      const cd = parseFloat(vSw.value);
+      if (!co || !cd) return alert('Introduce una cantidad válida para swap.');
+      try {
+        await postTx('/api/transacciones/swap', {
+          portafolio_id:        portafolioId,
+          activo_origen_id:     origen,
+          activo_destino_id:    destino,
+          cantidad:             co,
+          precio:               cd / co,
+          ip_origen:            location.hostname
+        });
+        alert('✅ Swap completado');
+        window.location.reload();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+  });
+  </script>
+
+  <script src="/client/js/alertas_btc.js"></script>
+  <script src="/client/js/alertas.js"></script>
 </body>
 </html>
