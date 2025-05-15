@@ -138,7 +138,7 @@
 
     async function fetchGoldPrice() {
       try {
-const res = await fetch('https://api.metalpriceapi.com/v1/latest?api_key=beabd5fcbef2f00f93d11adf808172df&base=XAU&currencies=EUR');
+const res = await fetch('https://api.metalpriceapi.com/v1/latest?api_key=0ccd2d923bd3ccc3b274d734d0ddfd60&base=XAU&currencies=EUR');
         const data = await res.json();
         let price = data.rates.EUR;
         const now = new Date();
