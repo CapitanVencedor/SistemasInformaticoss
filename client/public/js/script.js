@@ -3,6 +3,13 @@
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Script cargado correctamente');
 
+  // —— TU API KEY Y ENDPOINT DE ORO ——
+  const METAL_API_KEY = '0ccd2d923bd3ccc3b274d734d0ddfd60';
+  function getMetalPriceUrl() {
+    // Sustituye esta URL por la de tu proveedor real de precios de oro
+    return `https://api.tu-servidor.com/metal/price?metal=oro&apikey=${METAL_API_KEY}`;
+  }
+
   // ——— LOGIN ——————————————————————————————
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
@@ -10,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const email = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
-
       try {
         const res = await fetch('/api/usuarios/login', {
           method: 'POST',
@@ -22,18 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
           alert(data.error || 'Usuario o contraseña incorrectos');
           return;
         }
-        // ✅ Login correcto
         localStorage.setItem('sesionIniciada', 'true');
         localStorage.setItem('usuario', JSON.stringify(data.user));
         localStorage.setItem('rol', data.user.rol);
         localStorage.setItem('portafolioId', data.user.portafolioId);
-
-        // Redirige según rol
-        if (data.user.rol === 'admin' || data.user.rol === 'gestor') {
-          window.location.href = '/gestor/dashboard.html';
-        } else {
-          window.location.href = '/main.html';
-        }
+        window.location.href =
+          (data.user.rol === 'admin' || data.user.rol === 'gestor')
+            ? '/gestor/dashboard.html'
+            : '/main.html';
       } catch (err) {
         console.error('Error en login:', err);
         alert('Error al conectar con el servidor');
@@ -115,13 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       clienteTable.appendChild(tr);
     });
-
-    clienteTable.addEventListener('click', (e) => {
+    clienteTable.addEventListener('click', e => {
       const fila = e.target.closest('tr');
       if (!fila) return;
-
       const portafolioId = fila.dataset.portafolioId;
-      if (portafolioId) {
+      if (portafolioId && typeof cargarHistorial === 'function') {
         cargarHistorial(portafolioId);
       }
     });
@@ -137,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnAgregarActivo) {
     btnAgregarActivo.addEventListener('click', () => openModal(modalActivo));
   }
+
   if (activoForm) {
     activoForm.addEventListener('submit', ev => {
       ev.preventDefault();
@@ -157,6 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
       closeModal(modalActivo);
     });
   }
+
   window.editActivo = id => {
     const a = activos.find(x => x.id == id);
     if (!a) return;
@@ -166,12 +168,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('precio').value      = a.precio;
     openModal(modalActivo);
   };
+
   window.deleteActivo = id => {
     if (!confirm(`¿Eliminar activo #${id}?`)) return;
     activos = activos.filter(a => a.id != id);
     localStorage.setItem('aurum_activos', JSON.stringify(activos));
     refreshActivoTable();
   };
+
   function refreshActivoTable() {
     if (!activoTable) return;
     activoTable.innerHTML = '';
@@ -192,40 +196,54 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   refreshActivoTable();
 
-  // —— AÑADIDO: LÓGICA DE COMPRA EN CLIENT —————————
+  // —— LÓGICA DE COMPRA (CLIENTE) —————————
   const comprarForm   = document.getElementById('formComprarMain');
   const comprarSelect = document.getElementById('comprarActivoMain');
   const comprarCant   = document.getElementById('comprarCantidadMain');
   const comprarValor  = document.getElementById('comprarValorMain');
   const portafolio_id = +localStorage.getItem('portafolioId');
 
+  // Cuando cambia la cantidad, pide precio y calcula total
   comprarCant.addEventListener('input', async () => {
-    const qty = parseFloat(comprarCant.value);
+    const qty = parseFloat(comprarCant.value) || 0;
     if (!qty) { comprarValor.value = ''; return; }
     const activo_id = +comprarSelect.value;
-    console.log('Activo seleccionado:', activo_id);
-    console.log('Llamando a:', activo_id === 2 ? '/api/crypto/gold' : '/api/crypto/price');
+    const url = activo_id === 2
+      ? getMetalPriceUrl()                 // ORO con API key
+      : '/api/crypto/price?activo=bitcoin';// BITCOIN
     try {
-      const res = await fetch(activo_id === 2 ? '/api/crypto/gold' : '/api/crypto/price');
+      const res = await fetch(url);
       if (!res.ok) throw new Error('No price');
       const { precio } = await res.json();
-      comprarValor.value = precio.toFixed(2);
+      comprarValor.value = (precio * qty).toFixed(2);
     } catch (err) {
       console.error('Error al obtener precio:', err);
       comprarValor.value = '';
     }
   });
 
+  // Al enviar, pedimos confirmación
   if (comprarForm) {
     comprarForm.addEventListener('submit', async e => {
       e.preventDefault();
+
+      // Aquí la alerta de confirmación:
+      if (!confirm('¿Estás seguro que quieres comprar?')) {
+        return; // Si el usuario elige "No", aborta
+      }
+
       const activo_id = +comprarSelect.value;
       const cantidad  = +comprarCant.value;
       const ip_origen = location.hostname;
+      const url = activo_id === 2
+        ? getMetalPriceUrl()
+        : '/api/crypto/price?activo=bitcoin';
+
       try {
-        const resPrice = await fetch(activo_id === 2 ? '/api/crypto/gold' : '/api/crypto/price');
+        const resPrice = await fetch(url);
         if (!resPrice.ok) throw new Error('No hay precio disponible');
         const { precio } = await resPrice.json();
+
         const resTx = await fetch('/api/transacciones/comprar', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -233,9 +251,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const body = await resTx.json();
         if (!resTx.ok) throw new Error(body.error || 'Error al comprar');
-        alert('Compra registrada correctamente');
+        alert('✅ Compra registrada correctamente');
         if (typeof loadPortafolios === 'function') await loadPortafolios();
-        if (typeof loadClientes   === 'function') await loadClientes();
       } catch (err) {
         console.error('❌ Error al comprar:', err);
         alert('No se pudo completar la compra');
@@ -244,8 +261,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ——— MODALES ——————————————————————————————
-  function openModal(m)  { m.style.display = 'flex'; }
-  function closeModal(m) { m.style.display = 'none'; }
+  function openModal(m)   { m.style.display = 'flex'; }
+  function closeModal(m)  { m.style.display = 'none'; }
   document.querySelectorAll('.modal .close').forEach(el =>
     el.addEventListener('click', () => closeModal(el.closest('.modal')))
   );
@@ -253,22 +270,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.classList.contains('modal')) closeModal(e.target);
   });
 
-  // ——— IDLE‐TIMEOUT — desconecta tras 5s sin actividad —
+  // ——— IDLE‐TIMEOUT — desconecta tras 60s sin actividad —
   let idleSeconds = 0;
-  const maxIdle = 60;  // 5 segundos
-
-  function resetIdle() {
-    idleSeconds = 0;
-    console.log('🕑 Idle reiniciado');
-  }
+  const maxIdle = 60;
+  function resetIdle() { idleSeconds = 0; }
   ['mousemove','mousedown','keydown','scroll','touchstart']
     .forEach(evt => document.addEventListener(evt, resetIdle, true));
-
   setInterval(() => {
     idleSeconds++;
-    console.log(`⏱ Inactivo: ${idleSeconds}s`);
     if (idleSeconds >= maxIdle) {
-      console.log('🔒 Tiempo de inactividad superado, redirigiendo a logout');
+      console.log('🔒 Inactivo, redirigiendo a logout');
       window.location.href = '/logout.html';
     }
   }, 1000);

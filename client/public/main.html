@@ -56,8 +56,7 @@
 
   <section class="operaciones" style="padding: 3rem 2rem; text-align: center; background-color: #121a27;">
     <h2 style="margin-bottom: 1rem;">Opera con tus activos</h2>
-
-    <!-- Comprar -->
+   <!-- Comprar -->
     <form id="formComprarMain" style="margin-bottom:2rem;">
       <h3 style="color:gold">Comprar</h3>
       <select id="comprarActivoMain" required>
@@ -66,8 +65,11 @@
         <option value="3">Fiat</option>
       </select>
       <input id="comprarCantidadMain" type="number" step="any" placeholder="Cantidad" required />
-      <input id="comprarValorMain"    type="number" step="any" placeholder="Total (€)" readonly />
-      <button type="submit">Comprar</button>
+      <input id="comprarValorMain" type="number" step="any" placeholder="Total (€)" readonly />
+      <!-- Aquí añadimos el onclick -->
+      <button type="submit" onclick="return confirm('¿Estás seguro que quieres comprar?')">
+        Comprar
+      </button>
     </form>
 
     <!-- Vender -->
@@ -229,6 +231,7 @@
     sDe.addEventListener('change', () => recTotal(sDe, cSw, vSw));
     sSw.addEventListener('change', () => recTotal(sDe, cSw, vSw));
     cSw.addEventListener('input',  () => recTotal(sDe, cSw, vSw));
+
 
     async function postTx(path, body) {
       const res = await fetch(path, {
